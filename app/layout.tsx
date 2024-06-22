@@ -6,6 +6,7 @@ import ThemeProvider from "@/components/ThemeProvider/ThemeProvider";
 import Navbar from "@/components/Navbar/Navbar";
 import Image from "next/image";
 import Link from "next/link";
+import Script from "next/script";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,7 +23,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <script
+        <Script
+          strategy="lazyOnload"
           data-name="BMC-Widget"
           data-cfasync="false"
           src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js"
@@ -33,10 +35,13 @@ export default function RootLayout({
           data-position="Right"
           data-x_margin="18"
           data-y_margin="18"
-        ></script>
+        ></Script>
         <ThemeProvider>
           <Navbar />
-          <Container maxWidth="lg" sx={{ marginTop: "30px" , marginBottom: "30px"}}>
+          <Container
+            maxWidth="lg"
+            sx={{ marginTop: "30px", marginBottom: "30px" }}
+          >
             <div className="bodyClass">{children}</div>
           </Container>
         </ThemeProvider>
