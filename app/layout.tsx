@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css";
+import "@/app/globals.css";
+import { Container } from "@mui/material";
+import ThemeProvider from "@/components/ThemeProvider/ThemeProvider";
+import Navbar from "@/components/Navbar/Navbar";
+import Image from "next/image";
+import Link from "next/link";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,7 +21,26 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <script
+          data-name="BMC-Widget"
+          data-cfasync="false"
+          src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js"
+          data-id="berabykk3"
+          data-description="Support me on Buy me a coffee!"
+          data-message=""
+          data-color="#FF5F5F"
+          data-position="Right"
+          data-x_margin="18"
+          data-y_margin="18"
+        ></script>
+        <ThemeProvider>
+          <Navbar />
+          <Container maxWidth="lg" sx={{ marginTop: "30px" , marginBottom: "30px"}}>
+            <div className="bodyClass">{children}</div>
+          </Container>
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
