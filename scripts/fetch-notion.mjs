@@ -6,8 +6,13 @@
  * The deployed site then makes ZERO Notion calls at runtime — it just serves
  * static files, so it loads at CDN speed. (This is the fix for "Notion is slow".)
  *
- * If NOTION_TOKEN is not set, the script exits without touching anything, so
- * the committed seed content is used instead and the build still succeeds.
+ * Resilience:
+ *   - If NOTION_TOKEN is not set, the script exits without touching anything,
+ *     so the committed seed content is used and the build still succeeds.
+ *   - Content is fetched fully into memory FIRST and only written to disk once a
+ *     locale succeeds — a failed fetch never wipes existing/seed content.
+ *   - A failing locale/database is logged with a hint and skipped; the build is
+ *     NOT broken. Set NOTION_STRICT=1 to make content errors fail the build.
  *
  * Expiring Notion image URLs are downloaded and rewritten to local paths, so
  * images never break and are served straight from your own host.
@@ -16,6 +21,7 @@
  *   NOTION_TOKEN
  *   NOTION_TR_DATABASE_ID            NOTION_EN_DATABASE_ID
  *   NOTION_CHARACTER_TR_DATABASE_ID  NOTION_CHARACTER_EN_DATABASE_ID
+ *   NOTION_STRICT=1                  (optional) fail the build on content errors
  */
 import "dotenv/config";
 import crypto from "node:crypto";
@@ -31,7 +37,7 @@ import bookmarkPlugin from "@notion-render/bookmark-plugin";
 const ROOT = process.cwd();
 const OUT = path.join(ROOT, "public", "content");
 const IMG_DIR = path.join(OUT, "images");
-const FALLBACK_IMG = null;
+const STRICT = process.env.NOTION_STRICT === "1";
 
 const TOKEN = process.env.NOTION_TOKEN;
 
@@ -86,7 +92,7 @@ const imageCache = new Map();
 const EXPIRING = /amazonaws\.com|secure\.notion-static\.com|notion\.so\/image/;
 
 async function localizeImage(url) {
-  if (!url) return FALLBACK_IMG;
+  if (!url) return null;
   if (!EXPIRING.test(url)) return url; // stable external URL — leave as-is
   const key = url.split("?")[0];
   if (imageCache.has(key)) return imageCache.get(key);
@@ -108,6 +114,7 @@ async function localizeImage(url) {
       crypto.createHash("sha1").update(key).digest("hex").slice(0, 16) +
       "." +
       ext;
+    if (!existsSync(IMG_DIR)) await mkdir(IMG_DIR, { recursive: true });
     await writeFile(path.join(IMG_DIR, name), buf);
     const local = `/content/images/${name}`;
     imageCache.set(key, local);
@@ -202,96 +209,147 @@ async function writeJSON(rel, data) {
 
 /* ----------------------------------- run ----------------------------------- */
 
+/**
+ * Fetch + render an entire locale INTO MEMORY, then (only on success) write it
+ * to disk, replacing that locale's folder. If anything throws before the write
+ * phase, existing content on disk is left untouched.
+ */
 async function buildLocale(locale, cfg) {
   if (!cfg.stories) {
     console.log(`— ${locale}: no stories database id, skipping.`);
-    return;
+    return { skipped: true };
   }
   console.log(`\n▶ ${locale.toUpperCase()}`);
 
-  // Clean this locale's output (keep the shared images dir).
-  await rm(path.join(OUT, locale), { recursive: true, force: true });
-
-  /* Stories */
+  /* ---- Stories (fetch + render into memory) ---- */
   const storyPages = (await queryAll(cfg.stories)).filter((p) => {
     const s = statusName(p.properties.Status);
     return !s || s === "Published";
   });
 
-  const stories = [];
+  const storySummaries = [];
+  const storyPageBySlug = [];
   for (const page of storyPages) {
     try {
-      stories.push(await mapStory(page));
+      const summary = await mapStory(page);
+      storySummaries.push(summary);
+      storyPageBySlug.push({ page, summary });
     } catch (err) {
       console.warn(`   ! story skipped: ${err.message}`);
     }
   }
-  await writeJSON(`${locale}/stories.json`, stories);
-  console.log(`  stories: ${stories.length}`);
 
-  for (let i = 0; i < stories.length; i++) {
-    const summary = stories[i];
+  const storyDocs = [];
+  for (const { page, summary } of storyPageBySlug) {
     if (!summary.slug) continue;
+    let content = "";
     try {
-      const content = await renderPage(storyPages[i].id);
-      await writeJSON(`${locale}/stories/${summary.slug}.json`, {
-        ...summary,
-        content,
-      });
+      content = await renderPage(page.id);
     } catch (err) {
       console.warn(`   ! story body "${summary.slug}": ${err.message}`);
     }
+    storyDocs.push({ ...summary, content });
   }
 
-  /* Characters */
-  if (!cfg.characters) {
-    await writeJSON(`${locale}/characters.json`, []);
-    return;
-  }
-
-  const characterPages = await queryAll(cfg.characters);
-  const characters = [];
-  for (const page of characterPages) {
-    try {
-      characters.push(await mapCharacter(page));
-    } catch (err) {
-      console.warn(`   ! character skipped: ${err.message}`);
+  /* ---- Characters (fetch + render into memory) ---- */
+  let charSummaries = [];
+  const charDocs = [];
+  if (cfg.characters) {
+    const characterPages = await queryAll(cfg.characters);
+    const charPageBySlug = [];
+    for (const page of characterPages) {
+      try {
+        const summary = await mapCharacter(page);
+        charSummaries.push(summary);
+        charPageBySlug.push({ page, summary });
+      } catch (err) {
+        console.warn(`   ! character skipped: ${err.message}`);
+      }
+    }
+    for (const { page, summary } of charPageBySlug) {
+      if (!summary.slug) continue;
+      const related = storySummaries.filter(
+        (s) =>
+          s.characters.includes(summary.slug) ||
+          s.characters.includes(summary.name),
+      );
+      let content = "";
+      try {
+        content = await renderPage(page.id);
+      } catch (err) {
+        console.warn(`   ! character body "${summary.slug}": ${err.message}`);
+      }
+      charDocs.push({ ...summary, content, stories: related });
     }
   }
-  await writeJSON(`${locale}/characters.json`, characters);
-  console.log(`  characters: ${characters.length}`);
 
-  for (let i = 0; i < characters.length; i++) {
-    const summary = characters[i];
-    if (!summary.slug) continue;
-    const related = stories.filter(
-      (s) =>
-        s.characters.includes(summary.slug) ||
-        s.characters.includes(summary.name),
-    );
-    try {
-      const content = await renderPage(characterPages[i].id);
-      await writeJSON(`${locale}/characters/${summary.slug}.json`, {
-        ...summary,
-        content,
-        stories: related,
-      });
-    } catch (err) {
-      console.warn(`   ! character body "${summary.slug}": ${err.message}`);
-    }
+  /* ---- everything fetched OK → write (destructive, but only now) ---- */
+  await rm(path.join(OUT, locale), { recursive: true, force: true });
+  await writeJSON(`${locale}/stories.json`, storySummaries);
+  for (const doc of storyDocs) {
+    await writeJSON(`${locale}/stories/${doc.slug}.json`, doc);
   }
+  await writeJSON(`${locale}/characters.json`, charSummaries);
+  for (const doc of charDocs) {
+    await writeJSON(`${locale}/characters/${doc.slug}.json`, doc);
+  }
+
+  console.log(
+    `  ✓ ${storySummaries.length} stories, ${charSummaries.length} characters`,
+  );
+  return { stories: storySummaries.length, characters: charSummaries.length };
+}
+
+/** Turn a Notion API error into a short, actionable hint. */
+function explain(err) {
+  const code = err?.code ?? err?.body?.code;
+  const status = err?.status;
+  const byCode = {
+    unauthorized: "NOTION_TOKEN geçersiz veya eksik.",
+    restricted_resource:
+      "Entegrasyonun bu veritabanına erişimi yok — Notion'da veritabanını aç, ••• → Connections → integration'ı ekle.",
+    object_not_found:
+      "Veritabanı bulunamadı — DB ID yanlış olabilir ya da integration bu veritabanıyla paylaşılmamış.",
+    validation_error: "İstek geçersiz — DB ID biçimini kontrol et.",
+  };
+  const byStatus = {
+    401: "401 — NOTION_TOKEN geçersiz veya eksik.",
+    403: "403 — Token geçerli ama bu veritabanına erişim yok; Notion'da veritabanını integration ile paylaş (••• → Connections).",
+    404: "404 — DB ID bulunamadı; ID'yi ve paylaşımı kontrol et.",
+  };
+  if (code && byCode[code]) return `${code}: ${byCode[code]}`;
+  if (status && byStatus[status]) return byStatus[status];
+  return err?.message ?? String(err);
 }
 
 async function main() {
   if (!existsSync(IMG_DIR)) await mkdir(IMG_DIR, { recursive: true });
   console.log("Fetching content from Notion…");
+
+  const failures = [];
   for (const [locale, cfg] of Object.entries(LOCALE_CONFIG)) {
-    await buildLocale(locale, cfg);
+    try {
+      await buildLocale(locale, cfg);
+    } catch (err) {
+      failures.push(locale);
+      console.error(`\n✗ ${locale.toUpperCase()} atlandı → ${explain(err)}`);
+    }
   }
-  console.log("\n✓ Content generated in public/content/\n");
+
+  if (failures.length) {
+    console.warn(
+      `\n⚠️  Çekilemeyen dil(ler): ${failures.join(", ")}. ` +
+        `Mevcut/seed içerikle devam ediliyor.\n` +
+        `   (Build'i bu durumda kırmak istersen NOTION_STRICT=1 kullan.)\n`,
+    );
+    if (STRICT) process.exit(1);
+  } else {
+    console.log("\n✓ Content generated in public/content/\n");
+  }
 }
 
 main().catch((err) => {
-  console.error("\n✗ Notion fetch failed:", err);
-  process.exit(1);
+  console.error("\n✗ Notion fetch failed:", explain(err));
+  // Never break the build over a content error unless explicitly strict.
+  process.exit(STRICT ? 1 : 0);
 });
