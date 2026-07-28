@@ -1,4 +1,4 @@
-import { BookOpen, Globe, Menu } from "lucide-react";
+import { BookOpen, Globe, LogIn, LogOut, Menu, User } from "lucide-react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ModeToggle } from "@/components/mode-toggle";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth";
 import { useDict, useLocale } from "@/lib/hooks";
 import { LOCALES } from "@/lib/i18n";
 import type { Locale } from "@/lib/types";
@@ -20,6 +22,7 @@ export function SiteHeader() {
   const locale = useLocale();
   const dict = useDict();
   const location = useLocation();
+  const { user, logout } = useAuth();
 
   const links = [
     { to: `/${locale}`, label: dict.nav.stories, end: true },
@@ -91,6 +94,34 @@ export function SiteHeader() {
           </DropdownMenu>
 
           <ModeToggle />
+
+          {/* Auth */}
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label={user.displayName}>
+                  <User className="size-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-44">
+                <div className="px-2 py-1.5">
+                  <div className="text-sm font-medium">{user.displayName}</div>
+                  <div className="text-muted-foreground text-xs">@{user.userName}</div>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => logout()}>
+                  <LogOut className="size-4" />
+                  {locale === "tr" ? "Çıkış yap" : "Sign out"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button asChild variant="ghost" size="icon" aria-label={locale === "tr" ? "Giriş" : "Sign in"}>
+              <Link to={`/${locale}/login`}>
+                <LogIn className="size-5" />
+              </Link>
+            </Button>
+          )}
 
           {/* Mobile nav */}
           <div className="sm:hidden">
