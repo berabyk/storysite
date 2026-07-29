@@ -7,15 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StoryCard } from "@/components/story-card";
 import { getStories } from "@/lib/content";
+import { useActiveUniverse } from "@/lib/universe-theme";
 import { useAsync, useDict, useLocale } from "@/lib/hooks";
 
 export function HomePage() {
   const locale = useLocale();
   const dict = useDict();
   const navigate = useNavigate();
+  const { active } = useActiveUniverse();
   const { data: stories, loading } = useAsync(
-    () => getStories(locale, { sort: "popular" }),
-    [locale],
+    () => getStories(locale, { sort: "popular", universeId: active?.id }),
+    [locale, active?.id],
   );
 
   const [query, setQuery] = React.useState("");

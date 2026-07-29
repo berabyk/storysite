@@ -1,14 +1,16 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { CharacterCard } from "@/components/character-card";
 import { getCharacters } from "@/lib/content";
+import { useActiveUniverse } from "@/lib/universe-theme";
 import { useAsync, useDict, useLocale } from "@/lib/hooks";
 
 export function CharactersPage() {
   const locale = useLocale();
   const dict = useDict();
+  const { active } = useActiveUniverse();
   const { data: characters, loading } = useAsync(
-    () => getCharacters(locale),
-    [locale],
+    () => getCharacters(locale, active?.id),
+    [locale, active?.id],
   );
 
   return (

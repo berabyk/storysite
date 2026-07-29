@@ -5,13 +5,14 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { blockFontFamily } from "@/components/canvas-view";
-import { useUniverseTheme } from "@/lib/universe-theme";
+import { useActiveUniverse } from "@/lib/universe-theme";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n";
 
 export function Layout() {
   const { lang } = useParams();
   const { pathname } = useLocation();
-  const { theme } = useUniverseTheme();
+  const { active } = useActiveUniverse();
+  const theme = active?.theme ?? null;
   const viewportRef = React.useRef<HTMLDivElement>(null);
 
   // Reset the scroll position (of the ScrollArea viewport) on navigation.

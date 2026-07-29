@@ -7,39 +7,59 @@ export interface UniverseTheme {
   font?: string | null;
 }
 
-interface Ctx {
-  theme: UniverseTheme | null;
-  setTheme: (t: UniverseTheme | null) => void;
+/** The universe the visitor is currently "inside" — scopes content + theme. */
+export interface ActiveUniverse {
+  id: string;
+  slug: string;
+  name: string;
+  theme: UniverseTheme;
 }
 
-const UniverseThemeContext = React.createContext<Ctx>({
-  theme: null,
-  setTheme: () => {},
+interface Ctx {
+  active: ActiveUniverse | null;
+  setActive: (u: ActiveUniverse | null) => void;
+}
+
+const ActiveUniverseContext = React.createContext<Ctx>({
+  active: null,
+  setActive: () => {},
 });
 
-export function UniverseThemeProvider({
+const KEY = "ss_active_universe";
+
+export function ActiveUniverseProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [theme, setTheme] = React.useState<UniverseTheme | null>(null);
-  const value = React.useMemo(() => ({ theme, setTheme }), [theme]);
+  const [active, setActiveState] = React.useState<ActiveUniverse | null>(() => {
+    if (typeof localStorage === "undefined") return null;
+    try {
+      const raw = localStorage.getItem(KEY);
+      return raw ? (JSON.parse(raw) as ActiveUniverse) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const setActive = React.useCallback((u: ActiveUniverse | null) => {
+    setActiveState(u);
+    try {
+      if (u) localStorage.setItem(KEY, JSON.stringify(u));
+      else localStorage.removeItem(KEY);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const value = React.useMemo(() => ({ active, setActive }), [active, setActive]);
   return (
-    <UniverseThemeContext.Provider value={value}>
+    <ActiveUniverseContext.Provider value={value}>
       {children}
-    </UniverseThemeContext.Provider>
+    </ActiveUniverseContext.Provider>
   );
 }
 
-export function useUniverseTheme() {
-  return React.useContext(UniverseThemeContext);
-}
-
-/** Applies a universe theme while mounted; clears it on unmount. */
-export function useApplyUniverseTheme(theme: UniverseTheme | null | undefined) {
-  const { setTheme } = useUniverseTheme();
-  React.useEffect(() => {
-    setTheme(theme ?? null);
-    return () => setTheme(null);
-  }, [theme, setTheme]);
+export function useActiveUniverse() {
+  return React.useContext(ActiveUniverseContext);
 }

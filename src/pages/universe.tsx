@@ -1,3 +1,4 @@
+import * as React from "react";
 import { ArrowLeft, BookOpen, Globe2, Users } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 
@@ -7,19 +8,29 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StoryCard } from "@/components/story-card";
 import { CharacterCard } from "@/components/character-card";
 import { getUniverse } from "@/lib/universes";
-import { useApplyUniverseTheme } from "@/lib/universe-theme";
+import { useActiveUniverse } from "@/lib/universe-theme";
 import { useAsync, useLocale } from "@/lib/hooks";
 
 export function UniversePage() {
   const locale = useLocale();
   const { slug = "" } = useParams();
+  const { setActive } = useActiveUniverse();
   const { data: universe, loading } = useAsync(
     () => getUniverse(locale, slug),
     [locale, slug],
   );
 
-  // This universe themes the whole page while you're viewing it.
-  useApplyUniverseTheme(universe?.theme);
+  // Entering a universe's page makes it the active universe (site-wide
+  // theme + content scope), until the visitor switches away.
+  React.useEffect(() => {
+    if (universe)
+      setActive({
+        id: universe.id,
+        slug: universe.slug,
+        name: universe.name,
+        theme: universe.theme,
+      });
+  }, [universe, setActive]);
 
   const t =
     locale === "tr"
