@@ -29,10 +29,24 @@ export function Layout() {
   }
 
   // A universe can theme the whole page (background, text, accent, font).
+  // The CSS variables cascade to children (header, cards, buttons); we also
+  // paint backgroundColor/color on this element directly, because the page's
+  // base background is normally painted by <body> — an ancestor the variables
+  // set here can't reach — and this div only carries the .bg-paper gradient.
   const themeStyle = theme
     ? ({
-        ...(theme.background ? { ["--background" as string]: theme.background } : {}),
-        ...(theme.textColor ? { ["--foreground" as string]: theme.textColor } : {}),
+        ...(theme.background
+          ? {
+              ["--background" as string]: theme.background,
+              backgroundColor: theme.background,
+            }
+          : {}),
+        ...(theme.textColor
+          ? {
+              ["--foreground" as string]: theme.textColor,
+              color: theme.textColor,
+            }
+          : {}),
         ...(theme.accent ? { ["--primary" as string]: theme.accent } : {}),
         ...(theme.font
           ? { ["--font-sans" as string]: blockFontFamily(theme.font) }

@@ -7,7 +7,6 @@ import {
   Pencil,
   Plus,
   Trash2,
-  Upload,
   Users,
   X,
 } from "lucide-react";
@@ -19,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FONT_OPTIONS } from "@/components/canvas-view";
-import { uploadImage } from "@/lib/author";
+import { ImagePicker } from "@/components/image-picker";
 import {
   createUniverse,
   deleteUniverse,
@@ -29,6 +28,7 @@ import {
   type UniverseListItem,
 } from "@/lib/universes";
 import { useAuth } from "@/lib/auth";
+import { useActiveUniverse } from "@/lib/universe-theme";
 import { useLocale } from "@/lib/hooks";
 
 interface Form {
@@ -94,6 +94,7 @@ function ThemeColor({
 export function UniversesPage() {
   const locale = useLocale();
   const { user } = useAuth();
+  const { active, setActive } = useActiveUniverse();
   const t =
     locale === "tr"
       ? {
@@ -139,8 +140,6 @@ export function UniversesPage() {
   const [mine, setMine] = React.useState<UniverseListItem[]>([]);
   const [form, setForm] = React.useState<Form | null>(null);
   const [busy, setBusy] = React.useState(false);
-  const [uploading, setUploading] = React.useState(false);
-  const [uploadingBg, setUploadingBg] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   const reload = React.useCallback(() => {
@@ -153,34 +152,6 @@ export function UniversesPage() {
     reload();
   }, [reload]);
 
-  async function onUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !form) return;
-    setUploading(true);
-    setError(null);
-    try {
-      setForm({ ...form, coverImageUrl: await uploadImage(file) });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Yüklenemedi.");
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  async function onUploadBg(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !form) return;
-    setUploadingBg(true);
-    setError(null);
-    try {
-      setForm({ ...form, backgroundImage: await uploadImage(file) });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Yüklenemedi.");
-    } finally {
-      setUploadingBg(false);
-    }
-  }
-
   async function save() {
     if (!form) return;
     if (!form.name.trim()) {
@@ -190,21 +161,33 @@ export function UniversesPage() {
     setBusy(true);
     setError(null);
     try {
+      const theme = {
+        background: form.background || null,
+        backgroundImage: form.backgroundImage || null,
+        textColor: form.textColor || null,
+        accent: form.accent || null,
+        font: form.font || null,
+      };
       const body = {
         name: form.name.trim(),
         description: form.description.trim(),
         coverImageUrl: form.coverImageUrl,
         language: locale,
-        theme: {
-          background: form.background || null,
-          backgroundImage: form.backgroundImage || null,
-          textColor: form.textColor || null,
-          accent: form.accent || null,
-          font: form.font || null,
-        },
+        theme,
       };
-      if (form.id) await updateUniverse(form.id, body);
-      else await createUniverse(body);
+      const saved = form.id
+        ? await updateUniverse(form.id, body)
+        : await createUniverse(body);
+      // If the edited universe is the active one, refresh the live theme so
+      // the new colors/background apply site-wide immediately.
+      if (active && form.id && active.id === form.id) {
+        setActive({
+          id: saved.id,
+          slug: saved.slug,
+          name: saved.name,
+          theme,
+        });
+      }
       setForm(null);
       reload();
     } catch (err) {
@@ -255,26 +238,11 @@ export function UniversesPage() {
           </label>
           <div className="flex flex-col gap-1.5">
             <Label>{t.cover}</Label>
-            <div className="flex items-center gap-3">
-              {form.coverImageUrl && (
-                <img
-                  src={form.coverImageUrl}
-                  alt=""
-                  className="h-12 w-20 rounded-md object-cover"
-                />
-              )}
-              <Button asChild variant="outline" size="sm">
-                <label className="cursor-pointer">
-                  {uploading ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <Upload />
-                  )}
-                  {t.upload}
-                  <input type="file" accept="image/*" className="hidden" onChange={onUpload} />
-                </label>
-              </Button>
-            </div>
+            <ImagePicker
+              value={form.coverImageUrl}
+              onChange={(url) => setForm({ ...form, coverImageUrl: url })}
+              locale={locale}
+            />
           </div>
           {/* Per-universe theme */}
           <div className="border-t pt-4">
@@ -326,40 +294,11 @@ export function UniversesPage() {
               <Label>
                 {locale === "tr" ? "Arka plan görseli" : "Background image"}
               </Label>
-              <div className="flex items-center gap-3">
-                {form.backgroundImage && (
-                  <img
-                    src={form.backgroundImage}
-                    alt=""
-                    className="h-12 w-20 rounded-md object-cover"
-                  />
-                )}
-                <Button asChild variant="outline" size="sm">
-                  <label className="cursor-pointer">
-                    {uploadingBg ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <Upload />
-                    )}
-                    {t.upload}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={onUploadBg}
-                    />
-                  </label>
-                </Button>
-                {form.backgroundImage && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setForm({ ...form, backgroundImage: null })}
-                  >
-                    <X /> {locale === "tr" ? "Kaldır" : "Remove"}
-                  </Button>
-                )}
-              </div>
+              <ImagePicker
+                value={form.backgroundImage}
+                onChange={(url) => setForm({ ...form, backgroundImage: url })}
+                locale={locale}
+              />
             </div>
           </div>
 

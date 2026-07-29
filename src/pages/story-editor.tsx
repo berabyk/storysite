@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import {
 import { listCharacters, type CharacterListItem } from "@/lib/characters";
 import { listUniverses, type UniverseListItem } from "@/lib/universes";
 import { CharacterPicker } from "@/components/character-picker";
+import { ImagePicker } from "@/components/image-picker";
 import { useAuth } from "@/lib/auth";
 import { useLocale } from "@/lib/hooks";
 import type { StoryBlock, StoryDocument } from "@/lib/types";
@@ -161,16 +162,6 @@ export function StoryEditorPage() {
 
   if (!authLoading && !user) return <Navigate to={`/${locale}/login`} replace />;
 
-  async function onCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      setCover(await uploadImage(file));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Yükleme başarısız.");
-    }
-  }
-
   async function save(publish: boolean) {
     setError(null);
     if (!title.trim()) {
@@ -236,26 +227,12 @@ export function StoryEditorPage() {
 
           <div className="flex flex-col gap-1.5">
             <Label>{t.cover}</Label>
-            <div className="flex items-center gap-3">
-              {cover && (
-                <img
-                  src={cover}
-                  alt=""
-                  className="h-10 w-16 rounded-md object-cover"
-                />
-              )}
-              <Button asChild variant="outline" size="sm">
-                <label className="cursor-pointer">
-                  <Upload /> {t.upload}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={onCoverUpload}
-                  />
-                </label>
-              </Button>
-            </div>
+            <ImagePicker
+              value={cover}
+              onChange={setCover}
+              locale={locale}
+              previewClassName="h-10 w-16"
+            />
           </div>
         </div>
 
