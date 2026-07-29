@@ -8,6 +8,7 @@ import { CharacterPage } from "@/pages/character";
 import { AuthPage } from "@/pages/auth";
 import { StoryEditorPage } from "@/pages/story-editor";
 import { MyStoriesPage } from "@/pages/my-stories";
+import { PlanningPage } from "@/pages/planning";
 import { NotFoundPage } from "@/pages/not-found";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="login" element={<AuthPage mode="login" />} />
         <Route path="register" element={<AuthPage mode="register" />} />
         <Route path="mine" element={<MyStoriesPage />} />
+        <Route path="plan" element={<PlanningPage />} />
         <Route path="new" element={<StoryEditorPage />} />
         <Route path="edit/:slug" element={<StoryEditorPage />} />
       </Route>
