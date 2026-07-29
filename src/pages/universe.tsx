@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StoryCard } from "@/components/story-card";
 import { CharacterCard } from "@/components/character-card";
 import { getUniverse } from "@/lib/universes";
+import { useApplyUniverseTheme } from "@/lib/universe-theme";
 import { useAsync, useLocale } from "@/lib/hooks";
 
 export function UniversePage() {
@@ -16,6 +17,9 @@ export function UniversePage() {
     () => getUniverse(locale, slug),
     [locale, slug],
   );
+
+  // This universe themes the whole page while you're viewing it.
+  useApplyUniverseTheme(universe?.theme);
 
   const t =
     locale === "tr"

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArrowRight, BookOpen, Search, Users } from "lucide-react";
+import { ArrowRight, BookOpen, Globe2, Search, Users } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -67,8 +67,14 @@ export function HomePage() {
           </form>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Button asChild size="lg">
+              <Link to={`/${locale}/universes`}>
+                <Globe2 /> {locale === "tr" ? "Evrenlere göz at" : "Browse universes"}
+              </Link>
+            </Button>
             <Button
               size="lg"
+              variant="outline"
               onClick={() =>
                 document
                   .getElementById("stories")

@@ -1,4 +1,4 @@
-import { ArrowRight, Eye, Heart } from "lucide-react";
+import { ArrowRight, Bookmark, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Card } from "@/components/ui/card";
@@ -61,7 +61,7 @@ export function StoryCard({
                 <Eye className="size-3.5" /> {story.viewCount ?? 0}
               </span>
               <span className="inline-flex items-center gap-1">
-                <Heart className="size-3.5" /> {story.likeCount ?? 0}
+                <Bookmark className="size-3.5" /> {story.likeCount ?? 0}
               </span>
             </span>
           </div>

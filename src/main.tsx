@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "@/App";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/lib/auth";
+import { UniverseThemeProvider } from "@/lib/universe-theme";
 import "@/index.css";
 
 createRoot(document.getElementById("root")!).render(
@@ -12,7 +13,9 @@ createRoot(document.getElementById("root")!).render(
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
-          <App />
+          <UniverseThemeProvider>
+            <App />
+          </UniverseThemeProvider>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>

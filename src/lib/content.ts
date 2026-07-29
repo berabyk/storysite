@@ -122,6 +122,14 @@ export async function getStories(
   return res ? res.items.map(toStorySummary) : [];
 }
 
+/** Stories the signed-in user has saved. */
+export async function getSavedStories(): Promise<StorySummary[]> {
+  const res = await apiJson<StoryListItemDto[]>("/api/stories/saved").catch(
+    () => null,
+  );
+  return res ? res.map(toStorySummary) : [];
+}
+
 export async function getStory(
   locale: Locale,
   slug: string,

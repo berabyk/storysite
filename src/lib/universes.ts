@@ -1,4 +1,5 @@
 import { api, apiJson } from "./api";
+import type { UniverseTheme } from "./universe-theme";
 import type {
   Author,
   CharacterSummary,
@@ -40,6 +41,13 @@ interface CharacterItemDto {
   language: string;
 }
 
+interface ThemeDto {
+  background?: string | null;
+  textColor?: string | null;
+  accent?: string | null;
+  font?: string | null;
+}
+
 interface UniverseListItemDto {
   id: string;
   name: string;
@@ -50,6 +58,7 @@ interface UniverseListItemDto {
   owner: AuthorDto;
   storyCount: number;
   characterCount: number;
+  theme?: ThemeDto | null;
 }
 
 interface UniverseDetailDto extends UniverseListItemDto {
@@ -67,6 +76,7 @@ export interface UniverseListItem {
   owner: Author;
   storyCount: number;
   characterCount: number;
+  theme: UniverseTheme;
 }
 
 export interface UniverseDetail extends UniverseListItem {
@@ -79,6 +89,7 @@ export interface UniverseInput {
   description?: string;
   coverImageUrl?: string | null;
   language: string;
+  theme?: UniverseTheme;
 }
 
 function toAuthor(a: AuthorDto | undefined): Author {
@@ -101,6 +112,12 @@ function toListItem(u: UniverseListItemDto): UniverseListItem {
     owner: toAuthor(u.owner),
     storyCount: u.storyCount,
     characterCount: u.characterCount,
+    theme: {
+      background: u.theme?.background ?? null,
+      textColor: u.theme?.textColor ?? null,
+      accent: u.theme?.accent ?? null,
+      font: u.theme?.font ?? null,
+    },
   };
 }
 

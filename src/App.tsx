@@ -8,6 +8,7 @@ import { CharacterPage } from "@/pages/character";
 import { AuthPage } from "@/pages/auth";
 import { StoryEditorPage } from "@/pages/story-editor";
 import { MyStoriesPage } from "@/pages/my-stories";
+import { SavedPage } from "@/pages/saved";
 import { ProfilePage } from "@/pages/profile";
 import { PlanningPage } from "@/pages/planning";
 import { AdminCharactersPage } from "@/pages/admin-characters";
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="login" element={<AuthPage mode="login" />} />
         <Route path="register" element={<AuthPage mode="register" />} />
         <Route path="mine" element={<MyStoriesPage />} />
+        <Route path="saved" element={<SavedPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="plan" element={<PlanningPage />} />
         <Route path="plan/:storyId" element={<PlanningPage />} />
