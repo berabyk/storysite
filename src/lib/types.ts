@@ -71,6 +71,10 @@ export interface StorySummary {
   likeCount?: number;
   authorName?: string;
   authorUserName?: string;
+  language?: Locale;
+  genre?: string | null;
+  tags?: string[];
+  pinned?: boolean;
 }
 
 /** Full story, including the editor block document. */
@@ -89,6 +93,7 @@ export interface CharacterSummary {
   explanation: string;
   image: string | null;
   kind: string;
+  language?: Locale;
 }
 
 export interface Character extends CharacterSummary {

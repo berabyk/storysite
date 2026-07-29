@@ -92,7 +92,14 @@ export function CharacterPage() {
         </div>
 
         <div className="flex flex-col gap-4 sm:pt-4">
-          {character.kind && <Badge variant="soft">{character.kind}</Badge>}
+          <div className="flex flex-wrap items-center gap-2">
+            {character.kind && <Badge variant="soft">{character.kind}</Badge>}
+            {character.language && (
+              <Badge variant="secondary">
+                {character.language === "tr" ? "Türkçe" : "English"}
+              </Badge>
+            )}
+          </div>
           <h1 className="font-serif text-4xl leading-tight font-semibold tracking-tight sm:text-5xl">
             {character.name}
           </h1>
