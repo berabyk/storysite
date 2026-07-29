@@ -1,21 +1,13 @@
 import * as React from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
-import {
-  ArrowDown,
-  ArrowUp,
-  Heading,
-  Image as ImageIcon,
-  Loader2,
-  Trash2,
-  Type,
-  Upload,
-} from "lucide-react";
+import { Loader2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CanvasEditor } from "@/components/canvas-editor";
+import { CANVAS_W } from "@/components/canvas-view";
 import { getStory } from "@/lib/content";
 import {
   createStory,
@@ -25,12 +17,44 @@ import {
 } from "@/lib/author";
 import { useAuth } from "@/lib/auth";
 import { useLocale } from "@/lib/hooks";
-import type { StoryBlock } from "@/lib/types";
+import type { StoryBlock, StoryDocument } from "@/lib/types";
 
-const uid = () =>
-  typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : Math.random().toString(36).slice(2);
+const emptyDoc = (): StoryDocument => ({
+  version: 1,
+  mode: "canvas",
+  canvas: { width: CANVAS_W },
+  blocks: [],
+});
+
+function estimateHeight(b: StoryBlock): number {
+  if (b.type === "image") return 320;
+  if (b.type === "heading") return 72;
+  if (b.type === "divider" || b.type === "box") return 48;
+  const text =
+    (b.data?.text as string) ??
+    ((b.data?.html as string) ?? "").replace(/<[^>]+>/g, " ");
+  return Math.min(2400, Math.max(96, Math.ceil(text.length / 58) * 30 + 48));
+}
+
+/** Ensure any loaded document is in editable free-form canvas mode. */
+function ensureCanvasDoc(doc?: StoryDocument | null): StoryDocument {
+  if (!doc || !doc.blocks?.length) return emptyDoc();
+  const positioned = doc.blocks.some(
+    (b) => typeof b.x === "number" && typeof b.w === "number",
+  );
+  if (doc.mode === "canvas" || positioned) {
+    return { ...doc, mode: "canvas", canvas: { width: CANVAS_W, ...doc.canvas } };
+  }
+  // Migrate a legacy flow document into a stacked canvas layout.
+  let y = 48;
+  const blocks = doc.blocks.map((b, i) => {
+    const h = estimateHeight(b);
+    const block: StoryBlock = { ...b, x: 60, y, w: CANVAS_W - 120, h, z: i + 1 };
+    y += h + 24;
+    return block;
+  });
+  return { version: 1, mode: "canvas", canvas: { width: CANVAS_W }, blocks };
+}
 
 const T = {
   tr: {
@@ -40,17 +64,9 @@ const T = {
     summary: "Özet",
     cover: "Kapak görseli",
     upload: "Görsel yükle",
-    addText: "Metin",
-    addHeading: "Başlık",
-    addImage: "Görsel",
-    blocks: "İçerik blokları",
+    design: "Tasarım",
     saveDraft: "Taslağı kaydet",
     publish: "Yayınla",
-    empty: "Aşağıdan blok ekleyerek hikâyeni oluşturmaya başla.",
-    textPh: "Paragrafını yaz… (boş satır = yeni paragraf)",
-    headingPh: "Ara başlık",
-    imgUrlPh: "Görsel URL veya yükle",
-    saving: "Kaydediliyor…",
   },
   en: {
     newTitle: "New story",
@@ -59,17 +75,9 @@ const T = {
     summary: "Summary",
     cover: "Cover image",
     upload: "Upload image",
-    addText: "Text",
-    addHeading: "Heading",
-    addImage: "Image",
-    blocks: "Content blocks",
+    design: "Design",
     saveDraft: "Save draft",
     publish: "Publish",
-    empty: "Start building your story by adding blocks below.",
-    textPh: "Write your paragraph… (blank line = new paragraph)",
-    headingPh: "Subheading",
-    imgUrlPh: "Image URL or upload",
-    saving: "Saving…",
   },
 } as const;
 
@@ -84,12 +92,11 @@ export function StoryEditorPage() {
   const [title, setTitle] = React.useState("");
   const [summary, setSummary] = React.useState("");
   const [cover, setCover] = React.useState<string | null>(null);
-  const [blocks, setBlocks] = React.useState<StoryBlock[]>([]);
+  const [doc, setDoc] = React.useState<StoryDocument>(emptyDoc);
   const [loading, setLoading] = React.useState(Boolean(slug));
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  // Load existing story when editing.
   React.useEffect(() => {
     if (!slug) return;
     let active = true;
@@ -99,7 +106,7 @@ export function StoryEditorPage() {
       setTitle(s.title);
       setSummary(s.explanation);
       setCover(s.image);
-      setBlocks(s.content?.blocks?.length ? s.content.blocks : []);
+      setDoc(ensureCanvasDoc(s.content));
       setLoading(false);
     });
     return () => {
@@ -109,40 +116,11 @@ export function StoryEditorPage() {
 
   if (!authLoading && !user) return <Navigate to={`/${locale}/login`} replace />;
 
-  const addBlock = (type: StoryBlock["type"]) =>
-    setBlocks((b) => [...b, { id: uid(), type, data: {} }]);
-
-  const patch = (id: string, data: Partial<StoryBlock["data"]>) =>
-    setBlocks((b) =>
-      b.map((x) => (x.id === id ? { ...x, data: { ...x.data, ...data } } : x)),
-    );
-
-  const remove = (id: string) =>
-    setBlocks((b) => b.filter((x) => x.id !== id));
-
-  const move = (id: string, dir: -1 | 1) =>
-    setBlocks((b) => {
-      const i = b.findIndex((x) => x.id === id);
-      const j = i + dir;
-      if (i < 0 || j < 0 || j >= b.length) return b;
-      const copy = [...b];
-      [copy[i], copy[j]] = [copy[j], copy[i]];
-      return copy;
-    });
-
   async function onCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
       setCover(await uploadImage(file));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Yükleme başarısız.");
-    }
-  }
-
-  async function onBlockImageUpload(id: string, file: File) {
-    try {
-      patch(id, { url: await uploadImage(file) });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Yükleme başarısız.");
     }
@@ -160,7 +138,12 @@ export function StoryEditorPage() {
         title: title.trim(),
         summary: summary.trim(),
         coverImageUrl: cover,
-        content: { version: 1, canvas: { width: 800 }, blocks },
+        content: {
+          ...doc,
+          version: doc.version ?? 1,
+          mode: "canvas" as const,
+          canvas: { width: CANVAS_W, ...doc.canvas },
+        },
         language: locale,
       };
       const res = storyId
@@ -177,133 +160,76 @@ export function StoryEditorPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-24 text-center sm:px-6">
+      <div className="mx-auto max-w-5xl px-4 py-24 text-center sm:px-6">
         <Loader2 className="mx-auto size-6 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       <h1 className="font-serif mb-6 text-3xl font-semibold">
         {slug ? t.editTitle : t.newTitle}
       </h1>
 
       <div className="flex flex-col gap-5">
-        <label className="flex flex-col gap-1.5">
-          <Label>{t.title}</Label>
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-        </label>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <label className="flex flex-col gap-1.5">
+            <Label>{t.title}</Label>
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+          </label>
 
-        <label className="flex flex-col gap-1.5">
-          <Label>{t.summary}</Label>
-          <Textarea value={summary} onChange={(e) => setSummary(e.target.value)} />
-        </label>
-
-        {/* Cover */}
-        <div className="flex flex-col gap-1.5">
-          <Label>{t.cover}</Label>
-          <div className="flex items-center gap-3">
-            {cover && (
-              <img
-                src={cover}
-                alt=""
-                className="h-16 w-24 rounded-md object-cover"
-              />
-            )}
-            <Button asChild variant="outline" size="sm">
-              <label className="cursor-pointer">
-                <Upload /> {t.upload}
-                <input type="file" accept="image/*" className="hidden" onChange={onCoverUpload} />
-              </label>
-            </Button>
+          <div className="flex flex-col gap-1.5">
+            <Label>{t.cover}</Label>
+            <div className="flex items-center gap-3">
+              {cover && (
+                <img
+                  src={cover}
+                  alt=""
+                  className="h-10 w-16 rounded-md object-cover"
+                />
+              )}
+              <Button asChild variant="outline" size="sm">
+                <label className="cursor-pointer">
+                  <Upload /> {t.upload}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={onCoverUpload}
+                  />
+                </label>
+              </Button>
+            </div>
           </div>
         </div>
 
-        {/* Blocks */}
-        <div className="flex flex-col gap-3">
-          <Label>{t.blocks}</Label>
-          {blocks.length === 0 && (
-            <p className="text-muted-foreground text-sm">{t.empty}</p>
-          )}
-          {blocks.map((b, i) => (
-            <Card key={b.id} className="gap-2 p-3">
-              <div className="flex items-start gap-2">
-                <div className="flex-1">
-                  {b.type === "heading" ? (
-                    <Input
-                      value={b.data?.text ?? ""}
-                      placeholder={t.headingPh}
-                      onChange={(e) => patch(b.id, { text: e.target.value })}
-                    />
-                  ) : b.type === "image" ? (
-                    <div className="flex flex-col gap-2">
-                      {b.data?.url && (
-                        <img src={b.data.url} alt="" className="max-h-48 rounded-md object-contain" />
-                      )}
-                      <div className="flex gap-2">
-                        <Input
-                          value={b.data?.url ?? ""}
-                          placeholder={t.imgUrlPh}
-                          onChange={(e) => patch(b.id, { url: e.target.value })}
-                        />
-                        <Button asChild variant="outline" size="sm">
-                          <label className="cursor-pointer">
-                            <Upload />
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) =>
-                                e.target.files?.[0] &&
-                                onBlockImageUpload(b.id, e.target.files[0])
-                              }
-                            />
-                          </label>
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <Textarea
-                      value={b.data?.text ?? ""}
-                      placeholder={t.textPh}
-                      className="min-h-28"
-                      onChange={(e) => patch(b.id, { text: e.target.value })}
-                    />
-                  )}
-                </div>
-                <div className="flex flex-col gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => move(b.id, -1)} disabled={i === 0}>
-                    <ArrowUp className="size-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => move(b.id, 1)} disabled={i === blocks.length - 1}>
-                    <ArrowDown className="size-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => remove(b.id)}>
-                    <Trash2 className="text-destructive size-4" />
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
+        <label className="flex flex-col gap-1.5">
+          <Label>{t.summary}</Label>
+          <Textarea
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+          />
+        </label>
 
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => addBlock("text")}>
-              <Type /> {t.addText}
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => addBlock("heading")}>
-              <Heading /> {t.addHeading}
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => addBlock("image")}>
-              <ImageIcon /> {t.addImage}
-            </Button>
-          </div>
+        <div className="flex flex-col gap-2">
+          <Label>{t.design}</Label>
+          <CanvasEditor
+            value={doc}
+            onChange={setDoc}
+            onUploadImage={uploadImage}
+            locale={locale}
+          />
         </div>
 
         {error && <p className="text-destructive text-sm">{error}</p>}
 
         <div className="flex gap-3 pt-2">
-          <Button variant="outline" onClick={() => save(false)} disabled={saving}>
+          <Button
+            variant="outline"
+            onClick={() => save(false)}
+            disabled={saving}
+          >
             {saving && <Loader2 className="size-4 animate-spin" />}
             {t.saveDraft}
           </Button>

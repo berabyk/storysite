@@ -3,7 +3,7 @@ export type Locale = "tr" | "en";
 /** A block in the drag-and-drop editor document. */
 export interface StoryBlock {
   id: string;
-  type: "html" | "text" | "heading" | "image" | "divider" | string;
+  type: "html" | "text" | "heading" | "image" | "box" | "divider" | string;
   x?: number;
   y?: number;
   w?: number;
@@ -16,6 +16,14 @@ export interface StoryBlock {
     url?: string;
     alt?: string;
     align?: "left" | "center" | "right";
+    fontSize?: number;
+    font?: "serif" | "sans";
+    color?: string;
+    bg?: string;
+    bold?: boolean;
+    italic?: boolean;
+    radius?: number;
+    fit?: "cover" | "contain";
     [key: string]: unknown;
   };
 }
@@ -23,7 +31,9 @@ export interface StoryBlock {
 /** The editor document stored per story/character (jsonb on the backend). */
 export interface StoryDocument {
   version?: number;
-  canvas?: { width?: number; background?: string };
+  /** "canvas" = free drag/resize layout; otherwise flow (legacy / imported). */
+  mode?: "canvas" | "flow";
+  canvas?: { width?: number; height?: number; background?: string };
   blocks: StoryBlock[];
 }
 
