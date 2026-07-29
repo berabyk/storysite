@@ -16,6 +16,7 @@ import {
   uploadImage,
 } from "@/lib/author";
 import { listCharacters, type CharacterListItem } from "@/lib/characters";
+import { listUniverses, type UniverseListItem } from "@/lib/universes";
 import { CharacterPicker } from "@/components/character-picker";
 import { useAuth } from "@/lib/auth";
 import { useLocale } from "@/lib/hooks";
@@ -81,6 +82,8 @@ const T = {
     tagsPh: "macera, gizem (virgülle ayır)",
     coauthors: "Ortak yazarlar",
     coauthorsPh: "kullanıcı adları (virgülle ayır)",
+    universe: "Evren",
+    universeNone: "— Evren yok —",
     saveDraft: "Taslağı kaydet",
     publish: "Yayınla",
   },
@@ -122,13 +125,16 @@ export function StoryEditorPage() {
   const [tags, setTags] = React.useState("");
   const [charRefs, setCharRefs] = React.useState<string[]>([]);
   const [coauthors, setCoauthors] = React.useState("");
+  const [universeId, setUniverseId] = React.useState("");
   const [allChars, setAllChars] = React.useState<CharacterListItem[]>([]);
+  const [universes, setUniverses] = React.useState<UniverseListItem[]>([]);
   const [loading, setLoading] = React.useState(Boolean(slug));
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     listCharacters(locale).then(setAllChars);
+    listUniverses(locale).then(setUniverses);
   }, [locale]);
 
   React.useEffect(() => {
@@ -142,6 +148,7 @@ export function StoryEditorPage() {
       setCover(s.image);
       setCharRefs(s.characters ?? []);
       setCoauthors((s.coauthors ?? []).map((a) => a.userName).join(", "));
+      setUniverseId(s.universeId ?? "");
       setGenre(s.genre ?? "");
       setTags((s.tags ?? []).join(", "));
       setDoc(ensureEditableDoc(s.content));
@@ -192,6 +199,7 @@ export function StoryEditorPage() {
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean),
+        universeId: universeId || null,
       };
       const res = storyId
         ? await updateStory(storyId, body)
@@ -307,6 +315,24 @@ export function StoryEditorPage() {
             />
           </label>
         </div>
+
+        {universes.length > 0 && (
+          <label className="flex flex-col gap-1.5 sm:max-w-xs">
+            <Label>{t.universe}</Label>
+            <select
+              className="border-input bg-background h-9 rounded-md border px-2 text-sm"
+              value={universeId}
+              onChange={(e) => setUniverseId(e.target.value)}
+            >
+              <option value="">{t.universeNone}</option>
+              {universes.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <div className="flex flex-col gap-2">
           <Label>{t.content}</Label>

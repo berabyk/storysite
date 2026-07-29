@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getCharacter } from "@/lib/content";
 import { uploadImage } from "@/lib/author";
+import { listUniverses, type UniverseListItem } from "@/lib/universes";
 import {
   createCharacter,
   deleteCharacter,
@@ -29,6 +30,7 @@ interface FormState {
   kind: string;
   imageUrl: string | null;
   explanation: string;
+  universeId: string;
   age: string;
   pronouns: string;
   role: string;
@@ -43,6 +45,7 @@ const empty: FormState = {
   kind: "",
   imageUrl: null,
   explanation: "",
+  universeId: "",
   age: "",
   pronouns: "",
   role: "",
@@ -62,6 +65,8 @@ const T = {
     image: "Görsel",
     upload: "Görsel yükle",
     explanation: "Kısa özet",
+    universe: "Evren",
+    universeNone: "— Evren yok —",
     sheet: "Karakter künyesi (opsiyonel)",
     age: "Yaş",
     pronouns: "Zamir",
@@ -91,6 +96,8 @@ const T = {
     image: "Image",
     upload: "Upload image",
     explanation: "Short summary",
+    universe: "Universe",
+    universeNone: "— No universe —",
     sheet: "Character sheet (optional)",
     age: "Age",
     pronouns: "Pronouns",
@@ -118,6 +125,7 @@ export function AdminCharactersPage() {
   const { user, loading: authLoading } = useAuth();
 
   const [rows, setRows] = React.useState<Row[] | null>(null);
+  const [universes, setUniverses] = React.useState<UniverseListItem[]>([]);
   const [form, setForm] = React.useState<FormState | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
@@ -128,8 +136,11 @@ export function AdminCharactersPage() {
   }, [locale]);
 
   React.useEffect(() => {
-    if (user && isAdmin(user.roles)) reload();
-  }, [user, reload]);
+    if (user && isAdmin(user.roles)) {
+      reload();
+      listUniverses(locale).then(setUniverses);
+    }
+  }, [user, reload, locale]);
 
   if (!authLoading && (!user || !isAdmin(user.roles)))
     return <Navigate to={`/${locale}`} replace />;
@@ -147,6 +158,7 @@ export function AdminCharactersPage() {
       kind: row.kind ?? "",
       imageUrl: row.imageUrl ?? null,
       explanation: row.explanation ?? "",
+      universeId: full?.universeId ?? "",
       age: sheet.age ?? "",
       pronouns: sheet.pronouns ?? "",
       role: sheet.role ?? "",
@@ -194,6 +206,7 @@ export function AdminCharactersPage() {
         imageUrl: form.imageUrl,
         content: { version: 1, sheet, blocks: [] },
         language: locale,
+        universeId: form.universeId || null,
       };
       if (form.id) await updateCharacter(form.id, body);
       else await createCharacter(body);
@@ -277,6 +290,23 @@ export function AdminCharactersPage() {
               className="min-h-16"
             />
           </Field>
+
+          {universes.length > 0 && (
+            <Field label={t.universe}>
+              <select
+                className="border-input bg-background h-9 rounded-md border px-2 text-sm sm:max-w-xs"
+                value={form.universeId}
+                onChange={(e) => set({ universeId: e.target.value })}
+              >
+                <option value="">{t.universeNone}</option>
+                {universes.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
 
           <div>
             <p className="text-muted-foreground mb-3 text-sm font-medium">
