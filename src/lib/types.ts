@@ -69,6 +69,8 @@ export interface StorySummary {
   characters: string[];
   viewCount?: number;
   likeCount?: number;
+  authorName?: string;
+  authorUserName?: string;
 }
 
 /** Full story, including the editor block document. */

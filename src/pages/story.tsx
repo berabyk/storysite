@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StoryContent } from "@/components/story-content";
 import { StoryEngagement } from "@/components/story-engagement";
-import { getStory } from "@/lib/content";
+import { getCharacters, getStory } from "@/lib/content";
 import { formatDate } from "@/lib/utils";
 import { useAsync, useDict, useLocale } from "@/lib/hooks";
 
@@ -17,6 +17,9 @@ export function StoryPage() {
   const { data: story, loading } = useAsync(() => getStory(locale, slug), [
     locale,
     slug,
+  ]);
+  const { data: allCharacters } = useAsync(() => getCharacters(locale), [
+    locale,
   ]);
 
   if (loading) {
@@ -70,11 +73,20 @@ export function StoryPage() {
         >
           <ArrowLeft className="size-4" /> {dict.story.back}
         </Link>
-        {story.createdTime && (
-          <p className="text-primary mb-3 text-sm tracking-wide">
-            {formatDate(story.createdTime, locale)}
-          </p>
-        )}
+        <p className="text-primary mb-3 text-sm tracking-wide">
+          {story.createdTime && formatDate(story.createdTime, locale)}
+          {story.authorUserName && (
+            <>
+              {story.createdTime && " · "}
+              <Link
+                to={`/${locale}/author/${story.authorUserName}`}
+                className="hover:underline"
+              >
+                {story.authorName}
+              </Link>
+            </>
+          )}
+        </p>
         <h1 className="font-serif text-4xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl">
           {story.title}
         </h1>
@@ -89,6 +101,40 @@ export function StoryPage() {
       </header>
 
       <StoryContent document={story.content} className="px-4 sm:px-6" />
+
+      {(() => {
+        const attached = (allCharacters ?? []).filter((c) =>
+          story.characters?.includes(c.slug),
+        );
+        if (attached.length === 0) return null;
+        return (
+          <section className="mx-auto mt-14 max-w-3xl px-4 sm:px-6">
+            <h2 className="font-serif mb-4 text-xl font-semibold">
+              {locale === "tr" ? "Karakterler" : "Characters"}
+            </h2>
+            <div className="flex flex-wrap gap-3">
+              {attached.map((c) => (
+                <Link
+                  key={c.id}
+                  to={`/${locale}/characters/${c.slug}`}
+                  className="hover:bg-accent flex items-center gap-2 rounded-full border py-1 pr-3 pl-1 transition-colors"
+                >
+                  {c.image ? (
+                    <img
+                      src={c.image}
+                      alt=""
+                      className="size-7 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="bg-muted size-7 rounded-full" />
+                  )}
+                  <span className="text-sm">{c.name}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        );
+      })()}
     </article>
   );
 }
