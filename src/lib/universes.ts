@@ -43,6 +43,7 @@ interface CharacterItemDto {
 
 interface ThemeDto {
   background?: string | null;
+  backgroundImage?: string | null;
   textColor?: string | null;
   accent?: string | null;
   font?: string | null;
@@ -114,6 +115,7 @@ function toListItem(u: UniverseListItemDto): UniverseListItem {
     characterCount: u.characterCount,
     theme: {
       background: u.theme?.background ?? null,
+      backgroundImage: u.theme?.backgroundImage ?? null,
       textColor: u.theme?.textColor ?? null,
       accent: u.theme?.accent ?? null,
       font: u.theme?.font ?? null,

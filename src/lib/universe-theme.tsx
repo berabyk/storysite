@@ -2,12 +2,13 @@ import * as React from "react";
 
 export interface UniverseTheme {
   background?: string | null;
+  backgroundImage?: string | null;
   textColor?: string | null;
   accent?: string | null;
   font?: string | null;
 }
 
-/** The universe the visitor is currently "inside" — scopes content + theme. */
+/** A universe reduced to what the switcher / theming needs. */
 export interface ActiveUniverse {
   id: string;
   slug: string;
@@ -18,48 +19,84 @@ export interface ActiveUniverse {
 interface Ctx {
   active: ActiveUniverse | null;
   setActive: (u: ActiveUniverse | null) => void;
+  saved: ActiveUniverse[];
+  toggleSaved: (u: ActiveUniverse) => void;
+  isSaved: (id: string) => boolean;
 }
 
-const ActiveUniverseContext = React.createContext<Ctx>({
+const UniverseContext = React.createContext<Ctx>({
   active: null,
   setActive: () => {},
+  saved: [],
+  toggleSaved: () => {},
+  isSaved: () => false,
 });
 
-const KEY = "ss_active_universe";
+const ACTIVE_KEY = "ss_active_universe";
+const SAVED_KEY = "ss_saved_universes";
+
+function read<T>(key: string, fallback: T): T {
+  if (typeof localStorage === "undefined") return fallback;
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function write(key: string, value: unknown) {
+  try {
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* ignore */
+  }
+}
 
 export function ActiveUniverseProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [active, setActiveState] = React.useState<ActiveUniverse | null>(() => {
-    if (typeof localStorage === "undefined") return null;
-    try {
-      const raw = localStorage.getItem(KEY);
-      return raw ? (JSON.parse(raw) as ActiveUniverse) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [active, setActiveState] = React.useState<ActiveUniverse | null>(() =>
+    read<ActiveUniverse | null>(ACTIVE_KEY, null),
+  );
+  const [saved, setSaved] = React.useState<ActiveUniverse[]>(() =>
+    read<ActiveUniverse[]>(SAVED_KEY, []),
+  );
 
   const setActive = React.useCallback((u: ActiveUniverse | null) => {
     setActiveState(u);
-    try {
-      if (u) localStorage.setItem(KEY, JSON.stringify(u));
-      else localStorage.removeItem(KEY);
-    } catch {
-      /* ignore */
-    }
+    write(ACTIVE_KEY, u);
   }, []);
 
-  const value = React.useMemo(() => ({ active, setActive }), [active, setActive]);
+  const toggleSaved = React.useCallback((u: ActiveUniverse) => {
+    setSaved((prev) => {
+      const next = prev.some((x) => x.id === u.id)
+        ? prev.filter((x) => x.id !== u.id)
+        : [...prev, u];
+      write(SAVED_KEY, next);
+      return next;
+    });
+  }, []);
+
+  const isSaved = React.useCallback(
+    (id: string) => saved.some((x) => x.id === id),
+    [saved],
+  );
+
+  const value = React.useMemo(
+    () => ({ active, setActive, saved, toggleSaved, isSaved }),
+    [active, setActive, saved, toggleSaved, isSaved],
+  );
   return (
-    <ActiveUniverseContext.Provider value={value}>
+    <UniverseContext.Provider value={value}>
       {children}
-    </ActiveUniverseContext.Provider>
+    </UniverseContext.Provider>
   );
 }
 
 export function useActiveUniverse() {
-  return React.useContext(ActiveUniverseContext);
+  return React.useContext(UniverseContext);
 }

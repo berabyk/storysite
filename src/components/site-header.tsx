@@ -1,12 +1,8 @@
-import * as React from "react";
 import {
   BookOpen,
   Bookmark,
-  Check,
-  ChevronDown,
   Flag,
   Globe,
-  Globe2,
   Library,
   LogIn,
   LogOut,
@@ -18,9 +14,6 @@ import {
 } from "lucide-react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 
-import { listUniverses, type UniverseListItem } from "@/lib/universes";
-import { useActiveUniverse } from "@/lib/universe-theme";
-
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -30,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ModeToggle } from "@/components/mode-toggle";
+import { UniverseSwitcher } from "@/components/universe-switcher";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { useDict, useLocale } from "@/lib/hooks";
@@ -43,12 +37,6 @@ export function SiteHeader() {
   const dict = useDict();
   const location = useLocation();
   const { user, logout } = useAuth();
-  const { active, setActive } = useActiveUniverse();
-  const [universes, setUniverses] = React.useState<UniverseListItem[]>([]);
-
-  React.useEffect(() => {
-    listUniverses(locale).then(setUniverses);
-  }, [locale]);
 
   const links = [
     {
@@ -103,57 +91,7 @@ export function SiteHeader() {
         </nav>
 
         {/* Universe switcher — the site scopes to the active universe */}
-        {universes.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant={active ? "secondary" : "ghost"}
-                size="sm"
-                className="ml-1 gap-1.5"
-              >
-                <Globe2 className="size-4" />
-                <span className="max-w-[9rem] truncate">
-                  {active
-                    ? active.name
-                    : locale === "tr"
-                      ? "Tüm evrenler"
-                      : "All universes"}
-                </span>
-                <ChevronDown className="size-3.5 opacity-60" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="max-h-80 overflow-auto">
-              <DropdownMenuItem onSelect={() => setActive(null)}>
-                <Check
-                  className={cn("size-4", active && "opacity-0")}
-                />
-                {locale === "tr" ? "Tüm evrenler" : "All universes"}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {universes.map((u) => (
-                <DropdownMenuItem
-                  key={u.id}
-                  onSelect={() =>
-                    setActive({
-                      id: u.id,
-                      slug: u.slug,
-                      name: u.name,
-                      theme: u.theme,
-                    })
-                  }
-                >
-                  <Check
-                    className={cn(
-                      "size-4",
-                      active?.id !== u.id && "opacity-0",
-                    )}
-                  />
-                  {u.name}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+        <UniverseSwitcher locale={locale} />
 
         <div className="ml-auto flex items-center gap-1">
           {/* Language */}

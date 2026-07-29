@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArrowLeft, BookOpen, Globe2, Users } from "lucide-react";
+import { ArrowLeft, BookOpen, Globe2, Star, Users } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -10,11 +10,12 @@ import { CharacterCard } from "@/components/character-card";
 import { getUniverse } from "@/lib/universes";
 import { useActiveUniverse } from "@/lib/universe-theme";
 import { useAsync, useLocale } from "@/lib/hooks";
+import { cn } from "@/lib/utils";
 
 export function UniversePage() {
   const locale = useLocale();
   const { slug = "" } = useParams();
-  const { setActive } = useActiveUniverse();
+  const { setActive, toggleSaved, isSaved } = useActiveUniverse();
   const { data: universe, loading } = useAsync(
     () => getUniverse(locale, slug),
     [locale, slug],
@@ -99,9 +100,38 @@ export function UniversePage() {
           <span className="text-primary inline-flex items-center gap-1.5 text-xs font-medium tracking-[0.15em] uppercase">
             <Globe2 className="size-3.5" /> {locale === "tr" ? "Evren" : "Universe"}
           </span>
-          <h1 className="font-serif mt-2 text-3xl font-semibold sm:text-4xl">
-            {universe.name}
-          </h1>
+          <div className="mt-2 flex items-start justify-between gap-4">
+            <h1 className="font-serif text-3xl font-semibold sm:text-4xl">
+              {universe.name}
+            </h1>
+            <Button
+              variant={isSaved(universe.id) ? "secondary" : "outline"}
+              size="sm"
+              className="shrink-0 gap-1.5"
+              onClick={() =>
+                toggleSaved({
+                  id: universe.id,
+                  slug: universe.slug,
+                  name: universe.name,
+                  theme: universe.theme,
+                })
+              }
+            >
+              <Star
+                className={cn(
+                  "size-4",
+                  isSaved(universe.id) && "fill-primary text-primary",
+                )}
+              />
+              {isSaved(universe.id)
+                ? locale === "tr"
+                  ? "Kaydedildi"
+                  : "Saved"
+                : locale === "tr"
+                  ? "Kaydet"
+                  : "Save"}
+            </Button>
+          </div>
           {universe.description && (
             <p className="text-muted-foreground mt-3 max-w-2xl leading-relaxed whitespace-pre-wrap">
               {universe.description}
