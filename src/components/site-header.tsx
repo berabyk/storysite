@@ -5,6 +5,7 @@ import {
   LogIn,
   LogOut,
   Menu,
+  NotebookPen,
   Plus,
   User,
 } from "lucide-react";
@@ -128,6 +129,12 @@ export function SiteHeader() {
                   <Link to={`/${locale}/new`}>
                     <Plus className="size-4" />
                     {locale === "tr" ? "Yeni hikâye" : "New story"}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to={`/${locale}/plan`}>
+                    <NotebookPen className="size-4" />
+                    {locale === "tr" ? "Planlama" : "Planning"}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
