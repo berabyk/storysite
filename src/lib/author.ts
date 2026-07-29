@@ -26,6 +26,7 @@ export interface StoryInput {
   characterRefs?: string[];
   genre?: string | null;
   tags?: string[];
+  coauthors?: string[];
 }
 
 export function pinStory(id: string) {

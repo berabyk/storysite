@@ -127,6 +127,17 @@ export function StoryPage() {
               </Link>
             </>
           )}
+          {(story.coauthors ?? []).map((a) => (
+            <React.Fragment key={a.id}>
+              {", "}
+              <Link
+                to={`/${locale}/author/${a.userName}`}
+                className="hover:underline"
+              >
+                {a.displayName}
+              </Link>
+            </React.Fragment>
+          ))}
         </p>
         <h1 className="font-serif text-4xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl">
           {story.title}

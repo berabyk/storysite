@@ -55,19 +55,23 @@ export function deleteCharacter(id: string) {
   return api.request(`/api/characters/${id}`, { method: "DELETE" });
 }
 
+export interface CharacterListItem {
+  id: string;
+  name: string;
+  slug: string;
+  explanation: string;
+  kind: string;
+  imageUrl?: string | null;
+  language: string;
+  age?: string | null;
+  pronouns?: string | null;
+}
+
 /** All characters for a locale (used by the admin panel and story editor). */
-export async function listCharacters(locale: Locale) {
+export async function listCharacters(locale: Locale): Promise<CharacterListItem[]> {
   return (
-    (await apiJson<
-      {
-        id: string;
-        name: string;
-        slug: string;
-        explanation: string;
-        kind: string;
-        imageUrl?: string | null;
-        language: string;
-      }[]
-    >(`/api/characters?language=${locale}`).catch(() => null)) ?? []
+    (await apiJson<CharacterListItem[]>(
+      `/api/characters?language=${locale}`,
+    ).catch(() => null)) ?? []
   );
 }

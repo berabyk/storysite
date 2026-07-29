@@ -13,9 +13,29 @@ export function docHeight(doc: StoryDocument): number {
   return Math.max(doc.canvas?.height ?? 0, max + 48, 480);
 }
 
+/** Curated font choices (system fonts + the two self-hosted faces, so no
+ * external downloads / CSP issues). */
+export const FONT_OPTIONS: { value: string; label: string; stack: string }[] = [
+  { value: "serif", label: "Fraunces", stack: "var(--font-serif)" },
+  { value: "sans", label: "Inter", stack: "var(--font-sans)" },
+  { value: "georgia", label: "Georgia", stack: "Georgia, 'Times New Roman', serif" },
+  {
+    value: "garamond",
+    label: "Garamond",
+    stack: "Garamond, 'Palatino Linotype', 'Book Antiqua', serif",
+  },
+  { value: "helvetica", label: "Helvetica", stack: "Helvetica, Arial, sans-serif" },
+  { value: "verdana", label: "Verdana", stack: "Verdana, Geneva, sans-serif" },
+  { value: "courier", label: "Courier", stack: "'Courier New', Courier, monospace" },
+  { value: "mono", label: "Mono", stack: "ui-monospace, SFMono-Regular, Menlo, monospace" },
+  { value: "comic", label: "Comic", stack: "'Comic Sans MS', 'Comic Sans', cursive" },
+  { value: "script", label: "El yazısı", stack: "'Brush Script MT', 'Segoe Script', cursive" },
+];
+
 /** Font stack for a text/heading block. */
 export function blockFontFamily(font: unknown): string {
-  return font === "sans" ? "var(--font-sans)" : "var(--font-serif)";
+  const match = FONT_OPTIONS.find((o) => o.value === font);
+  return match ? match.stack : "var(--font-serif)";
 }
 
 /** Shared text style so the editor and the reader render identically. */
