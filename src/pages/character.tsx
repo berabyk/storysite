@@ -8,9 +8,29 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StoryCard } from "@/components/story-card";
 import { StoryContent } from "@/components/story-content";
 import { getCharacter } from "@/lib/content";
+import { readSheet } from "@/lib/characters";
 import { useAsync, useDict, useLocale } from "@/lib/hooks";
 
 const FALLBACK = "/static/images/cover.jpg";
+
+const SHEET_LABELS = {
+  tr: {
+    age: "Yaş",
+    pronouns: "Zamir",
+    role: "Rol",
+    traits: "Özellikler",
+    appearance: "Görünüş",
+    background: "Geçmiş",
+  },
+  en: {
+    age: "Age",
+    pronouns: "Pronouns",
+    role: "Role",
+    traits: "Traits",
+    appearance: "Appearance",
+    background: "Background",
+  },
+} as const;
 
 export function CharacterPage() {
   const locale = useLocale();
@@ -81,6 +101,7 @@ export function CharacterPage() {
               {character.explanation}
             </p>
           )}
+          <CharacterSheet content={character.content} locale={locale} />
         </div>
       </div>
 
@@ -94,7 +115,7 @@ export function CharacterPage() {
 
       {/* Appears in */}
       <Separator className="my-12" />
-      <section>
+      <section id="appears-in">
         <h2 className="font-serif mb-6 text-2xl font-semibold sm:text-3xl">
           {dict.character.appearsIn}
         </h2>
@@ -108,6 +129,72 @@ export function CharacterPage() {
           <p className="text-muted-foreground">{dict.character.noStories}</p>
         )}
       </section>
+    </div>
+  );
+}
+
+function CharacterSheet({
+  content,
+  locale,
+}: {
+  content: unknown;
+  locale: "tr" | "en";
+}) {
+  const sheet = readSheet(content);
+  const t = SHEET_LABELS[locale];
+  const meta = [
+    [t.age, sheet.age],
+    [t.pronouns, sheet.pronouns],
+    [t.role, sheet.role],
+  ].filter(([, v]) => Boolean(v)) as [string, string][];
+  const traits = sheet.traits ?? [];
+  const hasAny =
+    meta.length > 0 ||
+    traits.length > 0 ||
+    sheet.appearance ||
+    sheet.background;
+  if (!hasAny) return null;
+
+  return (
+    <div className="border-border/70 bg-card/50 mt-2 flex flex-col gap-4 rounded-xl border p-4">
+      {meta.length > 0 && (
+        <dl className="flex flex-wrap gap-x-8 gap-y-2">
+          {meta.map(([label, value]) => (
+            <div key={label} className="flex flex-col">
+              <dt className="text-muted-foreground text-xs tracking-wide uppercase">
+                {label}
+              </dt>
+              <dd className="font-medium">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {traits.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {traits.map((tr) => (
+            <Badge key={tr} variant="secondary">
+              {tr}
+            </Badge>
+          ))}
+        </div>
+      )}
+      {sheet.appearance && (
+        <SheetText label={SHEET_LABELS[locale].appearance} value={sheet.appearance} />
+      )}
+      {sheet.background && (
+        <SheetText label={SHEET_LABELS[locale].background} value={sheet.background} />
+      )}
+    </div>
+  );
+}
+
+function SheetText({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-muted-foreground text-xs tracking-wide uppercase">
+        {label}
+      </span>
+      <p className="leading-relaxed whitespace-pre-wrap">{value}</p>
     </div>
   );
 }

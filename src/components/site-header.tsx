@@ -7,6 +7,7 @@ import {
   Menu,
   NotebookPen,
   Plus,
+  Shield,
   User,
 } from "lucide-react";
 import { Link, NavLink, useLocation } from "react-router-dom";
@@ -137,6 +138,14 @@ export function SiteHeader() {
                     {locale === "tr" ? "Planlama" : "Planning"}
                   </Link>
                 </DropdownMenuItem>
+                {user.roles?.includes("Admin") && (
+                  <DropdownMenuItem asChild>
+                    <Link to={`/${locale}/admin/characters`}>
+                      <Shield className="size-4" />
+                      {locale === "tr" ? "Karakter yönetimi" : "Manage characters"}
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => logout()}>
                   <LogOut className="size-4" />
