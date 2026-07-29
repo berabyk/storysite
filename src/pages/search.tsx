@@ -3,25 +3,40 @@ import { Search as SearchIcon, X } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StoryCard } from "@/components/story-card";
+import { cn } from "@/lib/utils";
 import { getStories } from "@/lib/content";
 import { useAsync, useLocale } from "@/lib/hooks";
+import type { Locale } from "@/lib/types";
 
 const T = {
   tr: {
     title: "Hikâye ara",
     placeholder: "Başlık ya da özet içinde ara…",
-    hint: "Aramak için yazmaya başla.",
-    noResults: "Aramanla eşleşen hikâye bulunamadı.",
-    resultsFor: "sonuçlar",
+    hint: "Aramak için yazmaya başla ya da bir filtre seç.",
+    noResults: "Eşleşen hikâye bulunamadı.",
+    results: "sonuç",
+    language: "Dil",
+    all: "Hepsi",
+    tr: "Türkçe",
+    en: "English",
+    tag: "Etiket",
+    genre: "Tür",
   },
   en: {
     title: "Search stories",
     placeholder: "Search titles and summaries…",
-    hint: "Start typing to search.",
-    noResults: "No stories match your search.",
-    resultsFor: "results",
+    hint: "Start typing or pick a filter.",
+    noResults: "No stories match.",
+    results: "results",
+    language: "Language",
+    all: "All",
+    tr: "Türkçe",
+    en: "English",
+    tag: "Tag",
+    genre: "Genre",
   },
 } as const;
 
@@ -29,31 +44,58 @@ export function SearchPage() {
   const locale = useLocale();
   const t = T[locale];
   const [params, setParams] = useSearchParams();
-  const initial = params.get("q") ?? "";
 
-  const [term, setTerm] = React.useState(initial);
-  const [query, setQuery] = React.useState(initial);
-  const inputRef = React.useRef<HTMLInputElement>(null);
+  const tag = params.get("tag") ?? "";
+  const genre = params.get("genre") ?? "";
+  const [term, setTerm] = React.useState(params.get("q") ?? "");
+  const [query, setQuery] = React.useState(params.get("q") ?? "");
+  const [lang, setLang] = React.useState<Locale | "all">(locale);
 
-  // Keep the URL (?q=) in sync with a debounced term.
+  // Debounce the free-text term into the query + URL.
   React.useEffect(() => {
     const h = setTimeout(() => {
       setQuery(term.trim());
-      setParams(term.trim() ? { q: term.trim() } : {}, { replace: true });
+      setParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (term.trim()) next.set("q", term.trim());
+          else next.delete("q");
+          return next;
+        },
+        { replace: true },
+      );
     }, 250);
     return () => clearTimeout(h);
   }, [term, setParams]);
 
-  React.useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+  const active = Boolean(query || tag || genre);
 
   const { data: results, loading } = useAsync(
-    () => (query ? getStories(locale, { q: query }) : Promise.resolve([])),
-    [locale, query],
+    () =>
+      active
+        ? getStories(locale, {
+            q: query || undefined,
+            tag: tag || undefined,
+            genre: genre || undefined,
+            language: lang,
+          })
+        : Promise.resolve([]),
+    [locale, query, tag, genre, lang],
   );
 
   const stories = results ?? [];
+
+  const clearParam = (key: string) =>
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete(key);
+        return next;
+      },
+      { replace: true },
+    );
+
+  const langs: (Locale | "all")[] = ["all", "tr", "en"];
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
@@ -61,30 +103,67 @@ export function SearchPage() {
         {t.title}
       </h1>
 
-      <div className="relative mb-8 max-w-xl">
-        <SearchIcon className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2" />
-        <Input
-          ref={inputRef}
-          type="search"
-          value={term}
-          onChange={(e) => setTerm(e.target.value)}
-          placeholder={t.placeholder}
-          aria-label={t.title}
-          className="pl-9 pr-9"
-        />
-        {term && (
+      <div className="mb-4 max-w-xl">
+        <div className="relative">
+          <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+          <Input
+            type="search"
+            value={term}
+            onChange={(e) => setTerm(e.target.value)}
+            placeholder={t.placeholder}
+            aria-label={t.title}
+            className="pr-9 pl-9"
+          />
+          {term && (
+            <button
+              type="button"
+              onClick={() => setTerm("")}
+              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2.5 -translate-y-1/2"
+              aria-label="temizle"
+            >
+              <X className="size-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="mb-8 flex flex-wrap items-center gap-2">
+        <span className="text-muted-foreground text-sm">{t.language}:</span>
+        {langs.map((l) => (
           <button
+            key={l}
             type="button"
-            onClick={() => setTerm("")}
-            className="text-muted-foreground hover:text-foreground absolute right-2.5 top-1/2 -translate-y-1/2"
-            aria-label="temizle"
+            onClick={() => setLang(l)}
+            className={cn(
+              "rounded-full border px-3 py-1 text-sm transition-colors",
+              lang === l
+                ? "bg-primary text-primary-foreground border-transparent"
+                : "hover:bg-accent",
+            )}
           >
-            <X className="size-4" />
+            {l === "all" ? t.all : l === "tr" ? t.tr : t.en}
           </button>
+        ))}
+        {tag && (
+          <Badge variant="soft" className="gap-1">
+            {t.tag}: #{tag}
+            <button type="button" onClick={() => clearParam("tag")} aria-label="x">
+              <X className="size-3" />
+            </button>
+          </Badge>
+        )}
+        {genre && (
+          <Badge variant="soft" className="gap-1">
+            {t.genre}: {genre}
+            <button type="button" onClick={() => clearParam("genre")} aria-label="x">
+              <X className="size-3" />
+            </button>
+          </Badge>
         )}
       </div>
 
-      {!query ? (
+      {!active ? (
         <p className="text-muted-foreground py-12 text-center">{t.hint}</p>
       ) : loading ? (
         <div className="grid gap-6 sm:grid-cols-2">
@@ -100,7 +179,7 @@ export function SearchPage() {
       ) : (
         <>
           <p className="text-muted-foreground mb-4 text-sm">
-            {stories.length} {t.resultsFor}
+            {stories.length} {t.results}
           </p>
           <div className="grid gap-6 sm:grid-cols-2">
             {stories.map((s) => (

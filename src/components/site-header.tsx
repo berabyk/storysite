@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  Flag,
   Globe,
   Library,
   LogIn,
@@ -139,12 +140,20 @@ export function SiteHeader() {
                   </Link>
                 </DropdownMenuItem>
                 {user.roles?.includes("Admin") && (
-                  <DropdownMenuItem asChild>
-                    <Link to={`/${locale}/admin/characters`}>
-                      <Shield className="size-4" />
-                      {locale === "tr" ? "Karakter yönetimi" : "Manage characters"}
-                    </Link>
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link to={`/${locale}/admin/characters`}>
+                        <Shield className="size-4" />
+                        {locale === "tr" ? "Karakter yönetimi" : "Manage characters"}
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to={`/${locale}/admin/reports`}>
+                        <Flag className="size-4" />
+                        {locale === "tr" ? "Raporlar" : "Reports"}
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => logout()}>

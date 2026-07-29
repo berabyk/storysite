@@ -41,6 +41,9 @@ interface StoryListItemDto {
   author: AuthorDto;
   publishedAt?: string | null;
   createdAt: string;
+  genre?: string | null;
+  tags?: string[];
+  pinned?: boolean;
 }
 
 interface StoryDetailDto extends StoryListItemDto {
@@ -80,6 +83,10 @@ function toStorySummary(s: StoryListItemDto): StorySummary {
     likeCount: s.likeCount,
     authorName: s.author?.displayName,
     authorUserName: s.author?.userName,
+    language: (s.language as Locale) ?? "tr",
+    genre: s.genre ?? null,
+    tags: s.tags ?? [],
+    pinned: s.pinned ?? false,
   };
 }
 
@@ -87,6 +94,10 @@ export interface StoryQuery {
   sort?: "popular" | "recent";
   author?: string;
   q?: string;
+  genre?: string;
+  tag?: string;
+  /** Override the language filter; "all" fetches every language. */
+  language?: Locale | "all";
   pageSize?: number;
 }
 
@@ -94,13 +105,14 @@ export async function getStories(
   locale: Locale,
   opts: StoryQuery = {},
 ): Promise<StorySummary[]> {
-  const params = new URLSearchParams({
-    language: locale,
-    pageSize: String(opts.pageSize ?? 50),
-  });
+  const params = new URLSearchParams({ pageSize: String(opts.pageSize ?? 50) });
+  const lang = opts.language ?? locale;
+  if (lang !== "all") params.set("language", lang);
   if (opts.sort === "popular") params.set("sort", "popular");
   if (opts.author) params.set("author", opts.author);
   if (opts.q) params.set("q", opts.q);
+  if (opts.genre) params.set("genre", opts.genre);
+  if (opts.tag) params.set("tag", opts.tag);
   const res = await apiJson<PagedResult<StoryListItemDto>>(
     `/api/stories?${params.toString()}`,
   ).catch(() => null);
@@ -159,6 +171,7 @@ export async function getCharacter(
     explanation: c.explanation ?? "",
     image: c.imageUrl ?? null,
     kind: c.kind ?? "",
+    language: (c.language as Locale) ?? "tr",
     content: c.content ?? EMPTY_DOC,
     stories: (c.stories ?? []).map(toStorySummary),
   };

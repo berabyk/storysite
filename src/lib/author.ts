@@ -24,6 +24,16 @@ export interface StoryInput {
   content: StoryDocument;
   language: string;
   characterRefs?: string[];
+  genre?: string | null;
+  tags?: string[];
+}
+
+export function pinStory(id: string) {
+  return api.request(`/api/stories/${id}/pin`, { method: "POST" });
+}
+
+export function unpinStory(id: string) {
+  return api.request(`/api/stories/${id}/pin`, { method: "DELETE" });
 }
 
 export function getMyStories() {

@@ -10,6 +10,7 @@ import { StoryEditorPage } from "@/pages/story-editor";
 import { MyStoriesPage } from "@/pages/my-stories";
 import { PlanningPage } from "@/pages/planning";
 import { AdminCharactersPage } from "@/pages/admin-characters";
+import { AdminReportsPage } from "@/pages/admin-reports";
 import { SearchPage } from "@/pages/search";
 import { AuthorPage } from "@/pages/author";
 import { NotFoundPage } from "@/pages/not-found";
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="plan" element={<PlanningPage />} />
         <Route path="plan/:storyId" element={<PlanningPage />} />
         <Route path="admin/characters" element={<AdminCharactersPage />} />
+        <Route path="admin/reports" element={<AdminReportsPage />} />
         <Route path="new" element={<StoryEditorPage />} />
         <Route path="edit/:slug" element={<StoryEditorPage />} />
       </Route>

@@ -75,6 +75,10 @@ const T = {
     characters: "Karakterler",
     charactersHint: "Bu hikâyede yer alan karakterleri seç.",
     noCharacters: "Henüz karakter yok — admin panelinden ekleyebilirsin.",
+    genre: "Tür",
+    genrePh: "fantastik, polisiye, aşk…",
+    tags: "Etiketler",
+    tagsPh: "macera, gizem (virgülle ayır)",
     saveDraft: "Taslağı kaydet",
     publish: "Yayınla",
   },
@@ -89,6 +93,10 @@ const T = {
     characters: "Characters",
     charactersHint: "Pick the characters that appear in this story.",
     noCharacters: "No characters yet — add them from the admin panel.",
+    genre: "Genre",
+    genrePh: "fantasy, mystery, romance…",
+    tags: "Tags",
+    tagsPh: "adventure, mystery (comma-separated)",
     saveDraft: "Save draft",
     publish: "Publish",
   },
@@ -106,6 +114,8 @@ export function StoryEditorPage() {
   const [summary, setSummary] = React.useState("");
   const [cover, setCover] = React.useState<string | null>(null);
   const [doc, setDoc] = React.useState<StoryDocument>(emptyDoc);
+  const [genre, setGenre] = React.useState("");
+  const [tags, setTags] = React.useState("");
   const [charRefs, setCharRefs] = React.useState<string[]>([]);
   const [allChars, setAllChars] = React.useState<
     { slug: string; name: string }[]
@@ -130,6 +140,8 @@ export function StoryEditorPage() {
       setSummary(s.explanation);
       setCover(s.image);
       setCharRefs(s.characters ?? []);
+      setGenre(s.genre ?? "");
+      setTags((s.tags ?? []).join(", "));
       setDoc(ensureEditableDoc(s.content));
       setLoading(false);
     });
@@ -169,6 +181,11 @@ export function StoryEditorPage() {
         },
         language: locale,
         characterRefs: charRefs,
+        genre: genre.trim() || null,
+        tags: tags
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
       };
       const res = storyId
         ? await updateStory(storyId, body)
@@ -235,6 +252,25 @@ export function StoryEditorPage() {
             onChange={(e) => setSummary(e.target.value)}
           />
         </label>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <label className="flex flex-col gap-1.5">
+            <Label>{t.genre}</Label>
+            <Input
+              value={genre}
+              placeholder={t.genrePh}
+              onChange={(e) => setGenre(e.target.value)}
+            />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <Label>{t.tags}</Label>
+            <Input
+              value={tags}
+              placeholder={t.tagsPh}
+              onChange={(e) => setTags(e.target.value)}
+            />
+          </label>
+        </div>
 
         <div className="flex flex-col gap-2">
           <Label>{t.characters}</Label>

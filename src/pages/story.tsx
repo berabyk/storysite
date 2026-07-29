@@ -1,13 +1,21 @@
-import { ArrowLeft } from "lucide-react";
+import * as React from "react";
+import { ArrowLeft, Flag, Pin, PinOff } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StoryContent } from "@/components/story-content";
 import { StoryEngagement } from "@/components/story-engagement";
 import { getCharacters, getStory } from "@/lib/content";
+import { pinStory, unpinStory } from "@/lib/author";
+import { isAdmin } from "@/lib/characters";
+import { reportStory } from "@/lib/moderation";
+import { useAuth } from "@/lib/auth";
 import { formatDate } from "@/lib/utils";
 import { useAsync, useDict, useLocale } from "@/lib/hooks";
+
+const LANG_LABEL: Record<string, string> = { tr: "Türkçe", en: "English" };
 
 export function StoryPage() {
   const locale = useLocale();
@@ -21,6 +29,39 @@ export function StoryPage() {
   const { data: allCharacters } = useAsync(() => getCharacters(locale), [
     locale,
   ]);
+
+  const { user } = useAuth();
+  const admin = isAdmin(user?.roles);
+  const [pinned, setPinned] = React.useState(false);
+  const [reported, setReported] = React.useState(false);
+  React.useEffect(() => setPinned(Boolean(story?.pinned)), [story]);
+
+  async function togglePin() {
+    if (!story) return;
+    try {
+      if (pinned) await unpinStory(story.id);
+      else await pinStory(story.id);
+      setPinned(!pinned);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function onReport() {
+    if (!story || reported) return;
+    const reason =
+      window.prompt(
+        locale === "tr"
+          ? "Neden bildiriyorsun? (kısaca)"
+          : "Why are you reporting this? (briefly)",
+      ) ?? "";
+    try {
+      await reportStory(story.id, reason.trim() || "—");
+      setReported(true);
+    } catch {
+      /* ignore */
+    }
+  }
 
   if (loading) {
     return (
@@ -95,8 +136,58 @@ export function StoryPage() {
             {story.explanation}
           </p>
         )}
-        <div className="mt-6">
+
+        {/* Badges: language, genre, tags */}
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+          {story.language && (
+            <Badge variant="secondary">
+              {LANG_LABEL[story.language] ?? story.language}
+            </Badge>
+          )}
+          {story.genre && <Badge variant="soft">{story.genre}</Badge>}
+          {(story.tags ?? []).map((tag) => (
+            <Link key={tag} to={`/${locale}/search?tag=${encodeURIComponent(tag)}`}>
+              <Badge variant="outline" className="hover:bg-accent">
+                #{tag}
+              </Badge>
+            </Link>
+          ))}
+        </div>
+
+        <div className="mt-6 flex flex-col items-center gap-3">
           <StoryEngagement story={story} />
+          <div className="flex items-center gap-2">
+            {admin && (
+              <Button variant="outline" size="sm" onClick={togglePin}>
+                {pinned ? <PinOff className="size-4" /> : <Pin className="size-4" />}
+                {pinned
+                  ? locale === "tr"
+                    ? "Sabitlemeyi kaldır"
+                    : "Unpin"
+                  : locale === "tr"
+                    ? "Ana sayfada sabitle"
+                    : "Pin to home"}
+              </Button>
+            )}
+            {user && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onReport}
+                disabled={reported}
+                className="text-muted-foreground"
+              >
+                <Flag className="size-4" />
+                {reported
+                  ? locale === "tr"
+                    ? "Bildirildi"
+                    : "Reported"
+                  : locale === "tr"
+                    ? "Bildir"
+                    : "Report"}
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
