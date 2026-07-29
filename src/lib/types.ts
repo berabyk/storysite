@@ -36,6 +36,8 @@ export interface StorySummary {
   image: string | null;
   createdTime: string;
   characters: string[];
+  viewCount?: number;
+  likeCount?: number;
 }
 
 /** Full story, including the editor block document. */

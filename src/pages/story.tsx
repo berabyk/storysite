@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StoryContent } from "@/components/story-content";
+import { StoryEngagement } from "@/components/story-engagement";
 import { getStory } from "@/lib/content";
 import { formatDate } from "@/lib/utils";
 import { useAsync, useDict, useLocale } from "@/lib/hooks";
@@ -82,6 +83,9 @@ export function StoryPage() {
             {story.explanation}
           </p>
         )}
+        <div className="mt-6">
+          <StoryEngagement story={story} />
+        </div>
       </header>
 
       <StoryContent document={story.content} className="px-4 sm:px-6" />

@@ -75,6 +75,8 @@ function toStorySummary(s: StoryListItemDto): StorySummary {
     image: s.coverImageUrl ?? null,
     createdTime: s.publishedAt ?? s.createdAt,
     characters: [],
+    viewCount: s.viewCount,
+    likeCount: s.likeCount,
   };
 }
 
