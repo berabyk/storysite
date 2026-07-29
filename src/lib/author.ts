@@ -27,6 +27,7 @@ export interface StoryInput {
   genre?: string | null;
   tags?: string[];
   coauthors?: string[];
+  universeId?: string | null;
 }
 
 export function pinStory(id: string) {

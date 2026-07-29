@@ -39,6 +39,11 @@ export function SiteHeader() {
   const links = [
     { to: `/${locale}`, label: dict.nav.stories, end: true },
     { to: `/${locale}/characters`, label: dict.nav.characters, end: false },
+    {
+      to: `/${locale}/universes`,
+      label: locale === "tr" ? "Evrenler" : "Universes",
+      end: false,
+    },
   ];
 
   // Swap the locale segment of the current path, keeping the rest.

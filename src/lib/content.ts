@@ -52,6 +52,7 @@ interface StoryDetailDto extends StoryListItemDto {
   updatedAt: string;
   characterRefs?: string[];
   coauthors?: AuthorDto[];
+  universeId?: string | null;
 }
 
 interface CharacterListItemDto {
@@ -67,6 +68,7 @@ interface CharacterListItemDto {
 interface CharacterDetailDto extends CharacterListItemDto {
   content: StoryDocument;
   stories: StoryListItemDto[];
+  universeId?: string | null;
 }
 
 const EMPTY_DOC: StoryDocument = { version: 1, blocks: [] };
@@ -142,6 +144,7 @@ export async function getStory(
       displayName: a.displayName,
       avatarUrl: a.avatarUrl ?? null,
     })),
+    universeId: s.universeId ?? null,
   };
 }
 
@@ -181,5 +184,6 @@ export async function getCharacter(
     language: (c.language as Locale) ?? "tr",
     content: c.content ?? EMPTY_DOC,
     stories: (c.stories ?? []).map(toStorySummary),
+    universeId: c.universeId ?? null,
   };
 }

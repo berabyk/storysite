@@ -25,6 +25,7 @@ export interface CharacterInput {
   imageUrl?: string | null;
   content?: CharacterDoc;
   language: string;
+  universeId?: string | null;
 }
 
 /** Read the sheet out of a character document (tolerant of shape). */

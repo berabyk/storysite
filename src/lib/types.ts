@@ -92,6 +92,7 @@ export interface Story extends StorySummary {
   likedByMe?: boolean;
   authorName?: string;
   coauthors?: Author[];
+  universeId?: string | null;
 }
 
 export interface CharacterSummary {
@@ -108,4 +109,5 @@ export interface Character extends CharacterSummary {
   content: StoryDocument;
   /** Stories this character appears in. */
   stories: StorySummary[];
+  universeId?: string | null;
 }

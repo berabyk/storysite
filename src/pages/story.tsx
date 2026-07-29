@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StoryContent } from "@/components/story-content";
 import { StoryEngagement } from "@/components/story-engagement";
+import { Globe2 } from "lucide-react";
 import { getCharacters, getStory } from "@/lib/content";
+import { listUniverses } from "@/lib/universes";
 import { pinStory, unpinStory } from "@/lib/author";
 import { isAdmin } from "@/lib/characters";
 import { reportStory } from "@/lib/moderation";
@@ -29,6 +31,7 @@ export function StoryPage() {
   const { data: allCharacters } = useAsync(() => getCharacters(locale), [
     locale,
   ]);
+  const { data: universes } = useAsync(() => listUniverses(locale), [locale]);
 
   const { user } = useAuth();
   const admin = isAdmin(user?.roles);
@@ -148,8 +151,18 @@ export function StoryPage() {
           </p>
         )}
 
-        {/* Badges: language, genre, tags */}
+        {/* Badges: universe, language, genre, tags */}
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+          {(() => {
+            const u = (universes ?? []).find((x) => x.id === story.universeId);
+            return u ? (
+              <Link to={`/${locale}/universe/${u.slug}`}>
+                <Badge variant="soft" className="gap-1">
+                  <Globe2 className="size-3" /> {u.name}
+                </Badge>
+              </Link>
+            ) : null;
+          })()}
           {story.language && (
             <Badge variant="secondary">
               {LANG_LABEL[story.language] ?? story.language}

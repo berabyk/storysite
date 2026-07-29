@@ -14,6 +14,8 @@ import { AdminCharactersPage } from "@/pages/admin-characters";
 import { AdminReportsPage } from "@/pages/admin-reports";
 import { SearchPage } from "@/pages/search";
 import { AuthorPage } from "@/pages/author";
+import { UniversesPage } from "@/pages/universes";
+import { UniversePage } from "@/pages/universe";
 import { NotFoundPage } from "@/pages/not-found";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 
@@ -28,6 +30,8 @@ export default function App() {
         <Route path="author/:userName" element={<AuthorPage />} />
         <Route path="characters" element={<CharactersPage />} />
         <Route path="characters/:slug" element={<CharacterPage />} />
+        <Route path="universes" element={<UniversesPage />} />
+        <Route path="universe/:slug" element={<UniversePage />} />
         <Route path="login" element={<AuthPage mode="login" />} />
         <Route path="register" element={<AuthPage mode="register" />} />
         <Route path="mine" element={<MyStoriesPage />} />
