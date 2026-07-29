@@ -99,6 +99,7 @@ export interface StoryQuery {
   q?: string;
   genre?: string;
   tag?: string;
+  universeId?: string;
   /** Override the language filter; "all" fetches every language. */
   language?: Locale | "all";
   pageSize?: number;
@@ -116,6 +117,7 @@ export async function getStories(
   if (opts.q) params.set("q", opts.q);
   if (opts.genre) params.set("genre", opts.genre);
   if (opts.tag) params.set("tag", opts.tag);
+  if (opts.universeId) params.set("universeId", opts.universeId);
   const res = await apiJson<PagedResult<StoryListItemDto>>(
     `/api/stories?${params.toString()}`,
   ).catch(() => null);
@@ -158,9 +160,12 @@ export async function getStory(
 
 export async function getCharacters(
   locale: Locale,
+  universeId?: string,
 ): Promise<CharacterSummary[]> {
+  const params = new URLSearchParams({ language: locale });
+  if (universeId) params.set("universeId", universeId);
   const res = await apiJson<CharacterListItemDto[]>(
-    `/api/characters?language=${locale}`,
+    `/api/characters?${params.toString()}`,
   ).catch(() => null);
   return res
     ? res.map((c) => ({
@@ -170,6 +175,7 @@ export async function getCharacters(
         explanation: c.explanation ?? "",
         image: c.imageUrl ?? null,
         kind: c.kind ?? "",
+        language: (c.language as Locale) ?? "tr",
       }))
     : [];
 }
