@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Eye, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Card } from "@/components/ui/card";
@@ -51,10 +51,20 @@ export function StoryCard({
           <p className="text-muted-foreground line-clamp-3 text-sm leading-relaxed">
             {story.explanation}
           </p>
-          <span className="text-primary mt-auto inline-flex items-center gap-1.5 pt-2 text-sm font-medium">
-            {dict.actions.read}
-            <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-          </span>
+          <div className="mt-auto flex items-center justify-between pt-2">
+            <span className="text-primary inline-flex items-center gap-1.5 text-sm font-medium">
+              {dict.actions.read}
+              <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+            </span>
+            <span className="text-muted-foreground flex items-center gap-3 text-xs">
+              <span className="inline-flex items-center gap-1">
+                <Eye className="size-3.5" /> {story.viewCount ?? 0}
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <Heart className="size-3.5" /> {story.likeCount ?? 0}
+              </span>
+            </span>
+          </div>
         </div>
       </Link>
     </Card>
