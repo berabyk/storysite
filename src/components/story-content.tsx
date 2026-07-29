@@ -2,8 +2,9 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 import type { StoryBlock, StoryDocument } from "@/lib/types";
+import { CanvasView } from "@/components/canvas-view";
 
-/** Renders an editor block document in flow order, styled for reading. */
+/** Renders an editor block document, styled for reading. */
 export function StoryContent({
   document,
   className,
@@ -13,6 +14,17 @@ export function StoryContent({
 }) {
   const blocks = document?.blocks ?? [];
   if (blocks.length === 0) return null;
+
+  // Free-form canvas layout: render the scaled absolute view.
+  if (document?.mode === "canvas") {
+    return (
+      <div className={className}>
+        <CanvasView document={document} />
+      </div>
+    );
+  }
+
+  // Legacy / imported flow documents.
   return (
     <div className={cn("prose", className)}>
       {blocks.map((block) => (
