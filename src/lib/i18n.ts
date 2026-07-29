@@ -25,6 +25,8 @@ type Dict = {
     empty: string;
     search: string;
     noResults: string;
+    popular: string;
+    mostPopular: string;
   };
   charactersPage: {
     title: string;
@@ -70,6 +72,8 @@ const dictionaries: Record<Locale, Dict> = {
       empty: "Henüz yayımlanmış bir hikâye yok.",
       search: "Hikâye ara…",
       noResults: "Aramanla eşleşen hikâye bulunamadı.",
+      popular: "Popüler hikâyeler",
+      mostPopular: "En popüler",
     },
     charactersPage: {
       title: "Karakterler",
@@ -110,6 +114,8 @@ const dictionaries: Record<Locale, Dict> = {
       empty: "No published stories yet.",
       search: "Search stories…",
       noResults: "No stories match your search.",
+      popular: "Popular stories",
+      mostPopular: "Most popular",
     },
     charactersPage: {
       title: "Characters",

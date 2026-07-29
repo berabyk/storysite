@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/lib/auth";
 import { useLocale } from "@/lib/hooks";
 import {
@@ -89,7 +90,8 @@ const DEFAULTS: Record<PlanNodeKind, { w: number; h: number }> = {
 
 type Gesture =
   | { kind: "pan"; sx: number; sy: number; ox: number; oy: number }
-  | { kind: "move"; id: string; sx: number; sy: number; nx: number; ny: number };
+  | { kind: "move"; id: string; sx: number; sy: number; nx: number; ny: number }
+  | { kind: "resize"; id: string; sx: number; sy: number; ow: number; oh: number };
 
 export function PlanningPage() {
   const locale = useLocale();
@@ -133,20 +135,34 @@ export function PlanningPage() {
     if (!g) return;
     if (g.kind === "pan") {
       setPan({ x: g.ox + (e.clientX - g.sx), y: g.oy + (e.clientY - g.sy) });
-    } else {
-      const nx = g.nx + (e.clientX - g.sx);
-      const ny = g.ny + (e.clientY - g.sy);
+      return;
+    }
+    if (g.kind === "resize") {
+      const w = Math.max(90, g.ow + (e.clientX - g.sx));
+      const h = Math.max(60, g.oh + (e.clientY - g.sy));
       setBoard((b) =>
         b
           ? {
               ...b,
-              nodes: b.nodes.map((x) =>
-                x.id === g.id ? { ...x, x: nx, y: ny } : x,
-              ),
+              nodes: b.nodes.map((x) => (x.id === g.id ? { ...x, w, h } : x)),
             }
           : b,
       );
+      return;
     }
+    // move
+    const nx = g.nx + (e.clientX - g.sx);
+    const ny = g.ny + (e.clientY - g.sy);
+    setBoard((b) =>
+      b
+        ? {
+            ...b,
+            nodes: b.nodes.map((x) =>
+              x.id === g.id ? { ...x, x: nx, y: ny } : x,
+            ),
+          }
+        : b,
+    );
   }, []);
 
   const endGesture = React.useCallback(() => {
@@ -294,6 +310,19 @@ export function PlanningPage() {
       sy: e.clientY,
       nx: node.x,
       ny: node.y,
+    });
+  }
+
+  function onResizePointerDown(e: React.PointerEvent, node: PlanNode) {
+    e.stopPropagation();
+    setSelected(node.id);
+    startGesture({
+      kind: "resize",
+      id: node.id,
+      sx: e.clientX,
+      sy: e.clientY,
+      ow: node.w,
+      oh: node.h,
     });
   }
 
@@ -498,6 +527,7 @@ export function PlanningPage() {
                       : t.conceptText
                 }
                 onPointerDown={(e) => onNodePointerDown(e, n)}
+                onResizePointerDown={(e) => onResizePointerDown(e, n)}
                 onDoubleClick={() => {
                   setSelected(n.id);
                   setEditing(n.id);
@@ -609,6 +639,7 @@ interface BoardNodeProps {
   connecting: boolean;
   placeholder: string;
   onPointerDown: (e: React.PointerEvent) => void;
+  onResizePointerDown: (e: React.PointerEvent) => void;
   onDoubleClick: () => void;
   onText: (t: string) => void;
   onBlur: () => void;
@@ -622,6 +653,7 @@ function BoardNode({
   connecting,
   placeholder,
   onPointerDown,
+  onResizePointerDown,
   onDoubleClick,
   onText,
   onBlur,
@@ -697,14 +729,24 @@ function BoardNode({
           style={{ ...textStyle, padding: isNote ? 12 : isConcept ? 12 : 6 }}
         />
       ) : (
-        <div
-          className="flex size-full items-center overflow-hidden"
-          style={{ ...textStyle, padding: isNote ? 12 : isConcept ? 12 : 6 }}
-        >
-          {n.text || (
-            <span style={{ opacity: 0.45 }}>{placeholder}</span>
-          )}
-        </div>
+        <ScrollArea className="size-full" viewportClassName="rounded-[inherit]">
+          <div
+            style={{
+              ...textStyle,
+              padding: isNote ? 12 : isConcept ? 12 : 6,
+            }}
+          >
+            {n.text || <span style={{ opacity: 0.45 }}>{placeholder}</span>}
+          </div>
+        </ScrollArea>
+      )}
+
+      {selected && !editing && (
+        <span
+          onPointerDown={onResizePointerDown}
+          className="bg-primary absolute z-10 size-3 rounded-sm border border-white shadow"
+          style={{ right: -5, bottom: -5, cursor: "nwse-resize" }}
+        />
       )}
     </div>
   );

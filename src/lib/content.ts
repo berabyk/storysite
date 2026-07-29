@@ -78,12 +78,31 @@ function toStorySummary(s: StoryListItemDto): StorySummary {
     characters: [],
     viewCount: s.viewCount,
     likeCount: s.likeCount,
+    authorName: s.author?.displayName,
+    authorUserName: s.author?.userName,
   };
 }
 
-export async function getStories(locale: Locale): Promise<StorySummary[]> {
+export interface StoryQuery {
+  sort?: "popular" | "recent";
+  author?: string;
+  q?: string;
+  pageSize?: number;
+}
+
+export async function getStories(
+  locale: Locale,
+  opts: StoryQuery = {},
+): Promise<StorySummary[]> {
+  const params = new URLSearchParams({
+    language: locale,
+    pageSize: String(opts.pageSize ?? 50),
+  });
+  if (opts.sort === "popular") params.set("sort", "popular");
+  if (opts.author) params.set("author", opts.author);
+  if (opts.q) params.set("q", opts.q);
   const res = await apiJson<PagedResult<StoryListItemDto>>(
-    `/api/stories?language=${locale}&pageSize=50`,
+    `/api/stories?${params.toString()}`,
   ).catch(() => null);
   return res ? res.items.map(toStorySummary) : [];
 }
