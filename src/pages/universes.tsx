@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FONT_OPTIONS } from "@/components/canvas-view";
 import { uploadImage } from "@/lib/author";
 import {
   createUniverse,
@@ -35,9 +36,58 @@ interface Form {
   name: string;
   description: string;
   coverImageUrl: string | null;
+  background: string;
+  textColor: string;
+  accent: string;
+  font: string;
 }
 
-const empty: Form = { id: null, name: "", description: "", coverImageUrl: null };
+const empty: Form = {
+  id: null,
+  name: "",
+  description: "",
+  coverImageUrl: null,
+  background: "",
+  textColor: "",
+  accent: "",
+  font: "",
+};
+
+function ThemeColor({
+  label,
+  value,
+  fallback,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  fallback: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label>{label}</Label>
+      <div className="flex items-center gap-1.5">
+        <input
+          type="color"
+          value={value || fallback}
+          onChange={(e) => onChange(e.target.value)}
+          className="size-9 cursor-pointer rounded-md border bg-transparent p-0.5"
+        />
+        {value && (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="text-muted-foreground hover:text-foreground text-xs"
+            title="×"
+          >
+            ×
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function UniversesPage() {
   const locale = useLocale();
@@ -125,6 +175,12 @@ export function UniversesPage() {
         description: form.description.trim(),
         coverImageUrl: form.coverImageUrl,
         language: locale,
+        theme: {
+          background: form.background || null,
+          textColor: form.textColor || null,
+          accent: form.accent || null,
+          font: form.font || null,
+        },
       };
       if (form.id) await updateUniverse(form.id, body);
       else await createUniverse(body);
@@ -199,6 +255,52 @@ export function UniversesPage() {
               </Button>
             </div>
           </div>
+          {/* Per-universe theme */}
+          <div className="border-t pt-4">
+            <p className="text-muted-foreground mb-3 text-sm font-medium">
+              {locale === "tr"
+                ? "Tema (evrenin kendi görünümü)"
+                : "Theme (this universe's own look)"}
+            </p>
+            <div className="flex flex-wrap items-end gap-4">
+              <ThemeColor
+                label={locale === "tr" ? "Arka plan" : "Background"}
+                value={form.background}
+                fallback="#f5efe4"
+                onChange={(v) => setForm({ ...form, background: v })}
+              />
+              <ThemeColor
+                label={locale === "tr" ? "Yazı" : "Text"}
+                value={form.textColor}
+                fallback="#2b2620"
+                onChange={(v) => setForm({ ...form, textColor: v })}
+              />
+              <ThemeColor
+                label={locale === "tr" ? "Vurgu" : "Accent"}
+                value={form.accent}
+                fallback="#b0512f"
+                onChange={(v) => setForm({ ...form, accent: v })}
+              />
+              <label className="flex flex-col gap-1.5">
+                <Label>Font</Label>
+                <select
+                  className="border-input bg-background h-9 rounded-md border px-2 text-sm"
+                  value={form.font}
+                  onChange={(e) => setForm({ ...form, font: e.target.value })}
+                >
+                  <option value="">
+                    {locale === "tr" ? "Varsayılan" : "Default"}
+                  </option>
+                  {FONT_OPTIONS.map((f) => (
+                    <option key={f.value} value={f.value}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </div>
+
           {error && <p className="text-destructive text-sm">{error}</p>}
           <div className="flex gap-3">
             <Button onClick={save} disabled={busy}>
@@ -240,6 +342,10 @@ export function UniversesPage() {
                       name: u.name,
                       description: u.description,
                       coverImageUrl: u.coverImageUrl,
+                      background: u.theme.background ?? "",
+                      textColor: u.theme.textColor ?? "",
+                      accent: u.theme.accent ?? "",
+                      font: u.theme.font ?? "",
                     })
                   }
                 >

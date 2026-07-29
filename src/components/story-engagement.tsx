@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, Heart } from "lucide-react";
+import { Bookmark, Eye } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { likeStory, recordView, unlikeStory } from "@/lib/engagement";
@@ -15,8 +15,8 @@ export function StoryEngagement({ story }: { story: Story }) {
   const navigate = useNavigate();
 
   const [views, setViews] = React.useState(story.viewCount ?? 0);
-  const [likes, setLikes] = React.useState(story.likeCount ?? 0);
-  const [liked, setLiked] = React.useState(story.likedByMe ?? false);
+  const [saves, setSaves] = React.useState(story.likeCount ?? 0);
+  const [saved, setSaved] = React.useState(story.likedByMe ?? false);
   const [busy, setBusy] = React.useState(false);
 
   // Count a view once per mount (server de-duplicates per user/day).
@@ -34,9 +34,9 @@ export function StoryEngagement({ story }: { story: Story }) {
     if (busy) return;
     setBusy(true);
     try {
-      const r = liked ? await unlikeStory(story.id) : await likeStory(story.id);
-      setLiked(r.liked);
-      setLikes(r.likeCount);
+      const r = saved ? await unlikeStory(story.id) : await likeStory(story.id);
+      setSaved(r.liked);
+      setSaves(r.likeCount);
     } catch {
       /* ignore */
     } finally {
@@ -50,14 +50,21 @@ export function StoryEngagement({ story }: { story: Story }) {
         <Eye className="size-4" /> {views}
       </span>
       <Button
-        variant={liked ? "default" : "outline"}
+        variant={saved ? "default" : "outline"}
         size="sm"
         onClick={toggle}
         disabled={busy}
-        aria-pressed={liked}
+        aria-pressed={saved}
       >
-        <Heart className={cn("size-4", liked && "fill-current")} />
-        {likes}
+        <Bookmark className={cn("size-4", saved && "fill-current")} />
+        {saved
+          ? locale === "tr"
+            ? "Kaydedildi"
+            : "Saved"
+          : locale === "tr"
+            ? "Kaydet"
+            : "Save"}
+        <span className="opacity-70">· {saves}</span>
       </Button>
     </div>
   );

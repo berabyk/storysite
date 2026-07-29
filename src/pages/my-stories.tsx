@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, Navigate } from "react-router-dom";
-import { Eye, Heart, NotebookPen, Pencil, Plus, Trash2 } from "lucide-react";
+import { Bookmark, Eye, NotebookPen, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -131,7 +131,7 @@ export function MyStoriesPage() {
                       <Eye className="size-3.5" /> {s.viewCount}
                     </span>
                     <span className="inline-flex items-center gap-1">
-                      <Heart className="size-3.5" /> {s.likeCount}
+                      <Bookmark className="size-3.5" /> {s.likeCount}
                     </span>
                   </div>
                 </div>

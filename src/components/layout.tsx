@@ -4,11 +4,14 @@ import { Navigate, Outlet, useLocation, useParams } from "react-router-dom";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { blockFontFamily } from "@/components/canvas-view";
+import { useUniverseTheme } from "@/lib/universe-theme";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n";
 
 export function Layout() {
   const { lang } = useParams();
   const { pathname } = useLocation();
+  const { theme } = useUniverseTheme();
   const viewportRef = React.useRef<HTMLDivElement>(null);
 
   // Reset the scroll position (of the ScrollArea viewport) on navigation.
@@ -24,8 +27,23 @@ export function Layout() {
     return <Navigate to={`/${DEFAULT_LOCALE}`} replace />;
   }
 
+  // A universe can theme the whole page (background, text, accent, font).
+  const themeStyle = theme
+    ? ({
+        ...(theme.background ? { ["--background" as string]: theme.background } : {}),
+        ...(theme.textColor ? { ["--foreground" as string]: theme.textColor } : {}),
+        ...(theme.accent ? { ["--primary" as string]: theme.accent } : {}),
+        ...(theme.font
+          ? { ["--font-sans" as string]: blockFontFamily(theme.font) }
+          : {}),
+      } as React.CSSProperties)
+    : undefined;
+
   return (
-    <div className="bg-paper flex h-svh flex-col overflow-hidden">
+    <div
+      className="bg-paper flex h-svh flex-col overflow-hidden"
+      style={themeStyle}
+    >
       <SiteHeader />
       <ScrollArea className="flex-1" viewportRef={viewportRef}>
         <main>

@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  Bookmark,
   Flag,
   Globe,
   Library,
@@ -37,13 +38,13 @@ export function SiteHeader() {
   const { user, logout } = useAuth();
 
   const links = [
-    { to: `/${locale}`, label: dict.nav.stories, end: true },
-    { to: `/${locale}/characters`, label: dict.nav.characters, end: false },
     {
       to: `/${locale}/universes`,
       label: locale === "tr" ? "Evrenler" : "Universes",
       end: false,
     },
+    { to: `/${locale}`, label: dict.nav.stories, end: true },
+    { to: `/${locale}/characters`, label: dict.nav.characters, end: false },
   ];
 
   // Swap the locale segment of the current path, keeping the rest.
@@ -136,6 +137,12 @@ export function SiteHeader() {
                   <Link to={`/${locale}/mine`}>
                     <Library className="size-4" />
                     {locale === "tr" ? "Hikâyelerim" : "My stories"}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to={`/${locale}/saved`}>
+                    <Bookmark className="size-4" />
+                    {locale === "tr" ? "Kaydedilenler" : "Saved"}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
