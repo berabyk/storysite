@@ -37,6 +37,7 @@ interface Form {
   description: string;
   coverImageUrl: string | null;
   background: string;
+  backgroundImage: string | null;
   textColor: string;
   accent: string;
   font: string;
@@ -48,6 +49,7 @@ const empty: Form = {
   description: "",
   coverImageUrl: null,
   background: "",
+  backgroundImage: null,
   textColor: "",
   accent: "",
   font: "",
@@ -138,6 +140,7 @@ export function UniversesPage() {
   const [form, setForm] = React.useState<Form | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
+  const [uploadingBg, setUploadingBg] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   const reload = React.useCallback(() => {
@@ -154,10 +157,27 @@ export function UniversesPage() {
     const file = e.target.files?.[0];
     if (!file || !form) return;
     setUploading(true);
+    setError(null);
     try {
       setForm({ ...form, coverImageUrl: await uploadImage(file) });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Yüklenemedi.");
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function onUploadBg(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !form) return;
+    setUploadingBg(true);
+    setError(null);
+    try {
+      setForm({ ...form, backgroundImage: await uploadImage(file) });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Yüklenemedi.");
+    } finally {
+      setUploadingBg(false);
     }
   }
 
@@ -177,6 +197,7 @@ export function UniversesPage() {
         language: locale,
         theme: {
           background: form.background || null,
+          backgroundImage: form.backgroundImage || null,
           textColor: form.textColor || null,
           accent: form.accent || null,
           font: form.font || null,
@@ -299,6 +320,47 @@ export function UniversesPage() {
                 </select>
               </label>
             </div>
+
+            {/* Background image (covers the whole page for this universe) */}
+            <div className="mt-4 flex flex-col gap-1.5">
+              <Label>
+                {locale === "tr" ? "Arka plan görseli" : "Background image"}
+              </Label>
+              <div className="flex items-center gap-3">
+                {form.backgroundImage && (
+                  <img
+                    src={form.backgroundImage}
+                    alt=""
+                    className="h-12 w-20 rounded-md object-cover"
+                  />
+                )}
+                <Button asChild variant="outline" size="sm">
+                  <label className="cursor-pointer">
+                    {uploadingBg ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Upload />
+                    )}
+                    {t.upload}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={onUploadBg}
+                    />
+                  </label>
+                </Button>
+                {form.backgroundImage && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setForm({ ...form, backgroundImage: null })}
+                  >
+                    <X /> {locale === "tr" ? "Kaldır" : "Remove"}
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
 
           {error && <p className="text-destructive text-sm">{error}</p>}
@@ -343,6 +405,7 @@ export function UniversesPage() {
                       description: u.description,
                       coverImageUrl: u.coverImageUrl,
                       background: u.theme.background ?? "",
+                      backgroundImage: u.theme.backgroundImage ?? null,
                       textColor: u.theme.textColor ?? "",
                       accent: u.theme.accent ?? "",
                       font: u.theme.font ?? "",

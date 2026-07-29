@@ -37,6 +37,14 @@ export function Layout() {
         ...(theme.font
           ? { ["--font-sans" as string]: blockFontFamily(theme.font) }
           : {}),
+        ...(theme.backgroundImage
+          ? {
+              backgroundImage: `url(${JSON.stringify(theme.backgroundImage)})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+            }
+          : {}),
       } as React.CSSProperties)
     : undefined;
 
