@@ -1,9 +1,24 @@
 export type Locale = "tr" | "en";
 
-/** A block in the drag-and-drop editor document. */
+/** A free-form design region embedded inside a flow document. */
+export interface CanvasZone {
+  blocks: StoryBlock[];
+  height?: number;
+  background?: string;
+}
+
+/** A block in the editor document. */
 export interface StoryBlock {
   id: string;
-  type: "html" | "text" | "heading" | "image" | "box" | "divider" | string;
+  type:
+    | "html"
+    | "text"
+    | "heading"
+    | "image"
+    | "box"
+    | "divider"
+    | "canvas"
+    | string;
   x?: number;
   y?: number;
   w?: number;
@@ -24,6 +39,8 @@ export interface StoryBlock {
     italic?: boolean;
     radius?: number;
     fit?: "cover" | "contain";
+    /** For a "canvas" (design zone) block: its nested free-form layout. */
+    zone?: CanvasZone;
     [key: string]: unknown;
   };
 }
@@ -31,8 +48,12 @@ export interface StoryBlock {
 /** The editor document stored per story/character (jsonb on the backend). */
 export interface StoryDocument {
   version?: number;
-  /** "canvas" = free drag/resize layout; otherwise flow (legacy / imported). */
-  mode?: "canvas" | "flow";
+  /**
+   * "canvas" = the whole document is one free drag/resize layout.
+   * "flow" / "hybrid" = a sequence of blocks (the classic layout), which may
+   * include "canvas" design-zone blocks. Undefined is treated as flow.
+   */
+  mode?: "canvas" | "flow" | "hybrid";
   canvas?: { width?: number; height?: number; background?: string };
   blocks: StoryBlock[];
 }

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CanvasEditor } from "@/components/canvas-editor";
+import { FlowEditor } from "@/components/flow-editor";
 import { CANVAS_W } from "@/components/canvas-view";
 import { getStory } from "@/lib/content";
 import {
@@ -19,41 +19,46 @@ import { useAuth } from "@/lib/auth";
 import { useLocale } from "@/lib/hooks";
 import type { StoryBlock, StoryDocument } from "@/lib/types";
 
+const uid = () =>
+  typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2);
+
 const emptyDoc = (): StoryDocument => ({
   version: 1,
-  mode: "canvas",
-  canvas: { width: CANVAS_W },
+  mode: "flow",
   blocks: [],
 });
 
-function estimateHeight(b: StoryBlock): number {
-  if (b.type === "image") return 320;
-  if (b.type === "heading") return 72;
-  if (b.type === "divider" || b.type === "box") return 48;
-  const text =
-    (b.data?.text as string) ??
-    ((b.data?.html as string) ?? "").replace(/<[^>]+>/g, " ");
-  return Math.min(2400, Math.max(96, Math.ceil(text.length / 58) * 30 + 48));
-}
-
-/** Ensure any loaded document is in editable free-form canvas mode. */
-function ensureCanvasDoc(doc?: StoryDocument | null): StoryDocument {
+/**
+ * Bring any stored document into the editable flow (hybrid) shape.
+ * A legacy whole-document canvas becomes a single design-zone block so the
+ * author can keep the layout and add plain prose around it.
+ */
+function ensureEditableDoc(doc?: StoryDocument | null): StoryDocument {
   if (!doc || !doc.blocks?.length) return emptyDoc();
-  const positioned = doc.blocks.some(
-    (b) => typeof b.x === "number" && typeof b.w === "number",
-  );
-  if (doc.mode === "canvas" || positioned) {
-    return { ...doc, mode: "canvas", canvas: { width: CANVAS_W, ...doc.canvas } };
+
+  if (doc.mode === "canvas") {
+    const zoneBlock: StoryBlock = {
+      id: uid(),
+      type: "canvas",
+      data: {
+        zone: {
+          blocks: doc.blocks,
+          height: doc.canvas?.height,
+          background: doc.canvas?.background,
+        },
+      },
+    };
+    return { version: 1, mode: "flow", blocks: [zoneBlock] };
   }
-  // Migrate a legacy flow document into a stacked canvas layout.
-  let y = 48;
-  const blocks = doc.blocks.map((b, i) => {
-    const h = estimateHeight(b);
-    const block: StoryBlock = { ...b, x: 60, y, w: CANVAS_W - 120, h, z: i + 1 };
-    y += h + 24;
-    return block;
-  });
-  return { version: 1, mode: "canvas", canvas: { width: CANVAS_W }, blocks };
+
+  // Flow / hybrid: keep as-is, just guarantee every block has an id.
+  return {
+    ...doc,
+    mode: "flow",
+    blocks: doc.blocks.map((b) => (b.id ? b : { ...b, id: uid() })),
+  };
 }
 
 const T = {
@@ -64,7 +69,7 @@ const T = {
     summary: "Özet",
     cover: "Kapak görseli",
     upload: "Görsel yükle",
-    design: "Tasarım",
+    content: "İçerik",
     saveDraft: "Taslağı kaydet",
     publish: "Yayınla",
   },
@@ -75,7 +80,7 @@ const T = {
     summary: "Summary",
     cover: "Cover image",
     upload: "Upload image",
-    design: "Design",
+    content: "Content",
     saveDraft: "Save draft",
     publish: "Publish",
   },
@@ -106,7 +111,7 @@ export function StoryEditorPage() {
       setTitle(s.title);
       setSummary(s.explanation);
       setCover(s.image);
-      setDoc(ensureCanvasDoc(s.content));
+      setDoc(ensureEditableDoc(s.content));
       setLoading(false);
     });
     return () => {
@@ -141,8 +146,7 @@ export function StoryEditorPage() {
         content: {
           ...doc,
           version: doc.version ?? 1,
-          mode: "canvas" as const,
-          canvas: { width: CANVAS_W, ...doc.canvas },
+          mode: "flow" as const,
         },
         language: locale,
       };
@@ -213,8 +217,8 @@ export function StoryEditorPage() {
         </label>
 
         <div className="flex flex-col gap-2">
-          <Label>{t.design}</Label>
-          <CanvasEditor
+          <Label>{t.content}</Label>
+          <FlowEditor
             value={doc}
             onChange={setDoc}
             onUploadImage={uploadImage}

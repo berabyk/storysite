@@ -2,7 +2,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 import type { StoryBlock, StoryDocument } from "@/lib/types";
-import { CanvasView } from "@/components/canvas-view";
+import { CANVAS_W, CanvasView } from "@/components/canvas-view";
 
 /** Renders an editor block document, styled for reading. */
 export function StoryContent({
@@ -15,7 +15,7 @@ export function StoryContent({
   const blocks = document?.blocks ?? [];
   if (blocks.length === 0) return null;
 
-  // Free-form canvas layout: render the scaled absolute view.
+  // Whole-document free-form canvas.
   if (document?.mode === "canvas") {
     return (
       <div className={className}>
@@ -24,14 +24,64 @@ export function StoryContent({
     );
   }
 
-  // Legacy / imported flow documents.
+  // Flow / hybrid: a sequence of blocks, where a "canvas" block is a design
+  // zone. Group consecutive flow blocks so prose spacing (and the drop cap)
+  // works, and render each canvas zone between the groups.
+  const groups = groupBlocks(blocks);
   return (
-    <div className={cn("prose", className)}>
-      {blocks.map((block) => (
-        <Block key={block.id} block={block} />
-      ))}
+    <div className={cn("flex flex-col gap-8", className)}>
+      {groups.map((g, i) =>
+        g.kind === "zone" ? (
+          <ZoneView key={i} block={g.block} />
+        ) : (
+          <div key={i} className="prose">
+            {g.blocks.map((block) => (
+              <Block key={block.id} block={block} />
+            ))}
+          </div>
+        ),
+      )}
     </div>
   );
+}
+
+type Group =
+  | { kind: "flow"; blocks: StoryBlock[] }
+  | { kind: "zone"; block: StoryBlock };
+
+function groupBlocks(blocks: StoryBlock[]): Group[] {
+  const groups: Group[] = [];
+  let current: StoryBlock[] = [];
+  for (const b of blocks) {
+    if (b.type === "canvas") {
+      if (current.length) {
+        groups.push({ kind: "flow", blocks: current });
+        current = [];
+      }
+      groups.push({ kind: "zone", block: b });
+    } else {
+      current.push(b);
+    }
+  }
+  if (current.length) groups.push({ kind: "flow", blocks: current });
+  return groups;
+}
+
+/** A free-form design zone, rendered read-only and scaled to fit. */
+function ZoneView({ block }: { block: StoryBlock }) {
+  const zone = block.data?.zone;
+  if (!zone?.blocks?.length) return null;
+  const doc: StoryDocument = {
+    version: 1,
+    mode: "canvas",
+    canvas: {
+      width: CANVAS_W,
+      height: zone.height,
+      background: zone.background,
+    },
+    blocks: zone.blocks,
+  };
+  return <CanvasView document={doc} />;
 }
 
 function Block({ block }: { block: StoryBlock }) {
