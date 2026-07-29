@@ -1,5 +1,32 @@
 export type Locale = "tr" | "en";
 
+/** A block in the drag-and-drop editor document. */
+export interface StoryBlock {
+  id: string;
+  type: "html" | "text" | "heading" | "image" | "divider" | string;
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  z?: number;
+  data?: {
+    html?: string;
+    text?: string;
+    level?: number;
+    url?: string;
+    alt?: string;
+    align?: "left" | "center" | "right";
+    [key: string]: unknown;
+  };
+}
+
+/** The editor document stored per story/character (jsonb on the backend). */
+export interface StoryDocument {
+  version?: number;
+  canvas?: { width?: number; background?: string };
+  blocks: StoryBlock[];
+}
+
 /** Lightweight metadata used in listing/grid views. */
 export interface StorySummary {
   id: string;
@@ -11,10 +38,13 @@ export interface StorySummary {
   characters: string[];
 }
 
-/** Full story, including the pre-rendered HTML body. */
+/** Full story, including the editor block document. */
 export interface Story extends StorySummary {
-  /** HTML pre-rendered from Notion blocks at build time. */
-  content: string;
+  content: StoryDocument;
+  viewCount?: number;
+  likeCount?: number;
+  likedByMe?: boolean;
+  authorName?: string;
 }
 
 export interface CharacterSummary {
@@ -27,8 +57,7 @@ export interface CharacterSummary {
 }
 
 export interface Character extends CharacterSummary {
-  /** HTML pre-rendered from Notion blocks at build time. */
-  content: string;
-  /** Stories this character appears in (resolved at build time). */
+  content: StoryDocument;
+  /** Stories this character appears in. */
   stories: StorySummary[];
 }
