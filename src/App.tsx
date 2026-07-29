@@ -25,6 +25,7 @@ export default function App() {
         <Route path="register" element={<AuthPage mode="register" />} />
         <Route path="mine" element={<MyStoriesPage />} />
         <Route path="plan" element={<PlanningPage />} />
+        <Route path="plan/:storyId" element={<PlanningPage />} />
         <Route path="new" element={<StoryEditorPage />} />
         <Route path="edit/:slug" element={<StoryEditorPage />} />
       </Route>

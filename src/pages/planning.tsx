@@ -1,12 +1,12 @@
 import * as React from "react";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useParams } from "react-router-dom";
 import {
+  ArrowLeft,
   Crosshair,
   Link2,
   Loader2,
   NotebookPen,
   Plus,
-  Spline,
   StickyNote,
   Trash2,
   Type,
@@ -32,6 +32,10 @@ const L = {
   tr: {
     title: "Planlama",
     subtitle: "Kavram haritası, taslak defteri ve yapışkan notlar bir arada.",
+    storyTitle: "Hikâye planı",
+    storySubtitle: "Bu hikâyeye özel kavram haritası, taslak ve notlar.",
+    storySubtitleNamed: "hikâyesine özel plan.",
+    backToStories: "Hikâyelerim",
     concept: "Kavram",
     note: "Yapışkan not",
     text: "Metin",
@@ -53,6 +57,10 @@ const L = {
   en: {
     title: "Planning",
     subtitle: "Concept map, draft notebook and sticky notes in one place.",
+    storyTitle: "Story plan",
+    storySubtitle: "Concept map, draft and notes dedicated to this story.",
+    storySubtitleNamed: "— dedicated plan.",
+    backToStories: "My stories",
     concept: "Concept",
     note: "Sticky note",
     text: "Text",
@@ -87,6 +95,9 @@ export function PlanningPage() {
   const locale = useLocale();
   const t = L[locale];
   const { user, loading: authLoading } = useAuth();
+  const { storyId } = useParams();
+  const routeState = useLocation().state as { title?: string } | null;
+  const storyTitle = routeState?.title;
 
   const [board, setBoard] = React.useState<PlanBoard | null>(null);
   const [selected, setSelected] = React.useState<string | null>(null);
@@ -101,17 +112,20 @@ export function PlanningPage() {
   const gestureRef = React.useRef<Gesture | null>(null);
   const viewportRef = React.useRef<HTMLDivElement>(null);
 
-  // Load once we know the user.
+  // Load once we know the user (and reload when the scope/story changes).
   React.useEffect(() => {
-    if (user) setBoard(loadBoard(user.id));
-  }, [user]);
+    if (user) setBoard(loadBoard(user.id, storyId));
+    setSelected(null);
+    setEditing(null);
+    setPan({ x: 0, y: 0 });
+  }, [user, storyId]);
 
   // Persist on every change (debounced a touch).
   React.useEffect(() => {
     if (!user || !board) return;
-    const h = setTimeout(() => saveBoard(user.id, board), 250);
+    const h = setTimeout(() => saveBoard(user.id, board, storyId), 250);
     return () => clearTimeout(h);
-  }, [user, board]);
+  }, [user, board, storyId]);
 
   // ---- pointer gestures (declared before any early return: Rules of Hooks) ----
   const onPointerMove = React.useCallback((e: PointerEvent) => {
@@ -284,14 +298,43 @@ export function PlanningPage() {
   }
 
   const center = (n: PlanNode) => ({ x: n.x + n.w / 2, y: n.y + n.h / 2 });
+
+  // Point on a node's rectangle border along the direction toward (tx, ty),
+  // so connector arrows stop at the edge instead of the node's centre.
+  const borderPoint = (n: PlanNode, tx: number, ty: number) => {
+    const cx = n.x + n.w / 2;
+    const cy = n.y + n.h / 2;
+    const dx = tx - cx;
+    const dy = ty - cy;
+    if (dx === 0 && dy === 0) return { x: cx, y: cy };
+    const s = 1 / Math.max(Math.abs(dx) / (n.w / 2), Math.abs(dy) / (n.h / 2));
+    return { x: cx + dx * s, y: cy + dy * s };
+  };
   const nodeById = (id: string) => board.nodes.find((n) => n.id === id);
   const selNode = selected ? nodeById(selected) : null;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
       <div className="mb-4">
-        <h1 className="font-serif text-3xl font-semibold">{t.title}</h1>
-        <p className="text-muted-foreground text-sm">{t.subtitle}</p>
+        {storyId && (
+          <Link
+            to={`/${locale}/mine`}
+            className="text-muted-foreground hover:text-foreground mb-2 inline-flex items-center gap-1.5 text-sm"
+          >
+            <ArrowLeft className="size-4" />
+            {t.backToStories}
+          </Link>
+        )}
+        <h1 className="font-serif text-3xl font-semibold">
+          {storyId ? t.storyTitle : t.title}
+        </h1>
+        <p className="text-muted-foreground text-sm">
+          {storyId
+            ? storyTitle
+              ? `“${storyTitle}” ${t.storySubtitleNamed}`
+              : t.storySubtitle
+            : t.subtitle}
+        </p>
       </div>
 
       {/* Toolbar */}
@@ -410,15 +453,25 @@ export function PlanningPage() {
                 const a = nodeById(e.from);
                 const b = nodeById(e.to);
                 if (!a || !b) return null;
-                const c1 = center(a);
-                const c2 = center(b);
+                const ca = center(a);
+                const cb = center(b);
+                // Clip both ends to the node borders so the line/arrow never
+                // crosses over a node's content (e.g. transparent text nodes).
+                const p1 = borderPoint(a, cb.x, cb.y);
+                const p2 = borderPoint(b, ca.x, ca.y);
+                // Pull the arrow tip a few px off the target's edge.
+                const ux = ca.x - cb.x;
+                const uy = ca.y - cb.y;
+                const ul = Math.hypot(ux, uy) || 1;
+                const ex = p2.x + (ux / ul) * 5;
+                const ey = p2.y + (uy / ul) * 5;
                 return (
                   <line
                     key={e.id}
-                    x1={c1.x}
-                    y1={c1.y}
-                    x2={c2.x}
-                    y2={c2.y}
+                    x1={p1.x}
+                    y1={p1.y}
+                    x2={ex}
+                    y2={ey}
                     stroke="var(--color-primary)"
                     strokeWidth={2}
                     strokeOpacity={0.7}

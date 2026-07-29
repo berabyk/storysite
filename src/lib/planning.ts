@@ -59,12 +59,17 @@ export const planUid = () =>
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2);
 
-const storageKey = (userId: string) => `ss_plan_${userId}`;
+/**
+ * Storage key. Without a scope it is the user's shared/global board; with a
+ * scope (a story id) it is a board dedicated to that story.
+ */
+const storageKey = (userId: string, scope?: string) =>
+  scope ? `ss_plan_${userId}__${scope}` : `ss_plan_${userId}`;
 
-export function loadBoard(userId: string): PlanBoard {
+export function loadBoard(userId: string, scope?: string): PlanBoard {
   if (typeof localStorage === "undefined") return emptyBoard();
   try {
-    const raw = localStorage.getItem(storageKey(userId));
+    const raw = localStorage.getItem(storageKey(userId, scope));
     if (!raw) return emptyBoard();
     const parsed = JSON.parse(raw) as Partial<PlanBoard>;
     return {
@@ -78,14 +83,18 @@ export function loadBoard(userId: string): PlanBoard {
   }
 }
 
-export function saveBoard(userId: string, board: PlanBoard): void {
+export function saveBoard(
+  userId: string,
+  board: PlanBoard,
+  scope?: string,
+): void {
   if (typeof localStorage === "undefined") return;
   try {
     const payload: PlanBoard = {
       ...board,
       updatedAt: new Date().toISOString(),
     };
-    localStorage.setItem(storageKey(userId), JSON.stringify(payload));
+    localStorage.setItem(storageKey(userId, scope), JSON.stringify(payload));
   } catch {
     // storage full / unavailable — ignore silently
   }

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, Navigate } from "react-router-dom";
-import { Eye, Heart, Pencil, Plus, Trash2 } from "lucide-react";
+import { Eye, Heart, NotebookPen, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ const T = {
     draft: "Taslak",
     published: "Yayında",
     edit: "Düzenle",
+    plan: "Planla",
     publish: "Yayınla",
     unpublish: "Yayından al",
     del: "Sil",
@@ -36,6 +37,7 @@ const T = {
     draft: "Draft",
     published: "Published",
     edit: "Edit",
+    plan: "Plan",
     publish: "Publish",
     unpublish: "Unpublish",
     del: "Delete",
@@ -137,6 +139,14 @@ export function MyStoriesPage() {
                   <Button asChild variant="ghost" size="icon" title={t.edit}>
                     <Link to={`/${locale}/edit/${s.slug}`}>
                       <Pencil className="size-4" />
+                    </Link>
+                  </Button>
+                  <Button asChild variant="ghost" size="icon" title={t.plan}>
+                    <Link
+                      to={`/${locale}/plan/${s.id}`}
+                      state={{ title: s.title }}
+                    >
+                      <NotebookPen className="size-4" />
                     </Link>
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => toggle(s)}>
