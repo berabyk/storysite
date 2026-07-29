@@ -1,4 +1,13 @@
-import { BookOpen, Globe, LogIn, LogOut, Menu, User } from "lucide-react";
+import {
+  BookOpen,
+  Globe,
+  Library,
+  LogIn,
+  LogOut,
+  Menu,
+  Plus,
+  User,
+} from "lucide-react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -108,6 +117,19 @@ export function SiteHeader() {
                   <div className="text-sm font-medium">{user.displayName}</div>
                   <div className="text-muted-foreground text-xs">@{user.userName}</div>
                 </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to={`/${locale}/mine`}>
+                    <Library className="size-4" />
+                    {locale === "tr" ? "Hikâyelerim" : "My stories"}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to={`/${locale}/new`}>
+                    <Plus className="size-4" />
+                    {locale === "tr" ? "Yeni hikâye" : "New story"}
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => logout()}>
                   <LogOut className="size-4" />

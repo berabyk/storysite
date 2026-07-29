@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StoryCard } from "@/components/story-card";
+import { StoryContent } from "@/components/story-content";
 import { getCharacter } from "@/lib/content";
 import { useAsync, useDict, useLocale } from "@/lib/hooks";
 
@@ -84,13 +85,10 @@ export function CharacterPage() {
       </div>
 
       {/* Bio / content */}
-      {character.content && (
+      {(character.content?.blocks?.length ?? 0) > 0 && (
         <>
           <Separator className="my-12" />
-          <div
-            className="prose"
-            dangerouslySetInnerHTML={{ __html: character.content }}
-          />
+          <StoryContent document={character.content} />
         </>
       )}
 
