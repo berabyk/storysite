@@ -1,11 +1,26 @@
-import { ArrowRight, BookOpen, Users } from "lucide-react";
+import * as React from "react";
+import { ArrowRight, BookOpen, Search, Users, X } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StoryCard } from "@/components/story-card";
 import { getStories } from "@/lib/content";
 import { useAsync, useDict, useLocale } from "@/lib/hooks";
+import type { StorySummary } from "@/lib/types";
+
+const norm = (s: string) => s.toLocaleLowerCase("tr").trim();
+
+function matches(story: StorySummary, q: string): boolean {
+  const hay = norm(
+    [story.title, story.explanation, ...(story.characters ?? [])].join(" "),
+  );
+  return norm(q)
+    .split(/\s+/)
+    .filter(Boolean)
+    .every((term) => hay.includes(term));
+}
 
 export function HomePage() {
   const locale = useLocale();
@@ -14,8 +29,13 @@ export function HomePage() {
     locale,
   ]);
 
-  const featured = stories?.[0];
-  const rest = stories?.slice(1) ?? [];
+  const [query, setQuery] = React.useState("");
+  const searching = query.trim().length > 0;
+
+  const all = stories ?? [];
+  const featured = all[0];
+  const rest = all.slice(1);
+  const filtered = searching ? all.filter((s) => matches(s, query)) : rest;
 
   return (
     <div>
@@ -47,7 +67,7 @@ export function HomePage() {
       </section>
 
       {/* Featured story */}
-      {!loading && featured && (
+      {!loading && featured && !searching && (
         <section className="mx-auto max-w-5xl px-4 sm:px-6">
           <Link
             to={`/${locale}/stories/${featured.slug}`}
@@ -81,10 +101,33 @@ export function HomePage() {
 
       {/* Stories grid */}
       <section id="stories" className="mx-auto max-w-5xl scroll-mt-20 px-4 py-14 sm:px-6">
-        <div className="mb-8 flex items-end justify-between">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <h2 className="font-serif text-2xl font-semibold sm:text-3xl">
             {dict.home.allStories}
           </h2>
+          {!loading && all.length > 0 && (
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2" />
+              <Input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={dict.home.search}
+                aria-label={dict.home.search}
+                className="pl-9 pr-9"
+              />
+              {searching && (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  className="text-muted-foreground hover:text-foreground absolute right-2.5 top-1/2 -translate-y-1/2"
+                  aria-label="temizle"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {loading ? (
@@ -97,13 +140,17 @@ export function HomePage() {
               </div>
             ))}
           </div>
-        ) : rest.length === 0 && !featured ? (
+        ) : all.length === 0 ? (
           <p className="text-muted-foreground py-16 text-center">
             {dict.home.empty}
           </p>
+        ) : filtered.length === 0 ? (
+          <p className="text-muted-foreground py-16 text-center">
+            {dict.home.noResults}
+          </p>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2">
-            {rest.map((story) => (
+            {filtered.map((story) => (
               <StoryCard key={story.id} story={story} />
             ))}
           </div>
