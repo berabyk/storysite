@@ -122,6 +122,12 @@ export function SiteHeader() {
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
+                  <Link to={`/${locale}/profile`}>
+                    <User className="size-4" />
+                    {locale === "tr" ? "Profilim" : "My profile"}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link to={`/${locale}/mine`}>
                     <Library className="size-4" />
                     {locale === "tr" ? "Hikâyelerim" : "My stories"}

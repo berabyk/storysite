@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { api, tokenStore, type AuthResponse, type AuthUser } from "./api";
+import { api, apiJson, tokenStore, type AuthResponse, type AuthUser } from "./api";
 
 interface AuthState {
   user: AuthUser | null;
@@ -13,6 +13,11 @@ interface AuthState {
     displayName?: string;
   }) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (body: {
+    displayName?: string;
+    bio?: string | null;
+    avatarUrl?: string | null;
+  }) => Promise<void>;
 }
 
 const AuthContext = React.createContext<AuthState | null>(null);
@@ -58,6 +63,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async logout() {
         await api.logout();
         setUser(null);
+      },
+      async updateProfile(body) {
+        const updated = await apiJson<AuthUser>("/api/auth/me", {
+          method: "PUT",
+          body: JSON.stringify(body),
+        });
+        setUser(updated);
       },
     }),
     [user, loading],

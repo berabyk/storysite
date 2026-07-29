@@ -32,7 +32,7 @@ export interface StoryBlock {
     alt?: string;
     align?: "left" | "center" | "right";
     fontSize?: number;
-    font?: "serif" | "sans";
+    font?: string;
     color?: string;
     bg?: string;
     bold?: boolean;
@@ -77,6 +77,13 @@ export interface StorySummary {
   pinned?: boolean;
 }
 
+export interface Author {
+  id: string;
+  userName: string;
+  displayName: string;
+  avatarUrl?: string | null;
+}
+
 /** Full story, including the editor block document. */
 export interface Story extends StorySummary {
   content: StoryDocument;
@@ -84,6 +91,7 @@ export interface Story extends StorySummary {
   likeCount?: number;
   likedByMe?: boolean;
   authorName?: string;
+  coauthors?: Author[];
 }
 
 export interface CharacterSummary {

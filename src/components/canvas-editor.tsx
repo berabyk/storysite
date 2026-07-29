@@ -19,7 +19,12 @@ import {
 
 import { cn } from "@/lib/utils";
 import type { Locale, StoryBlock, StoryDocument } from "@/lib/types";
-import { BlockView, CANVAS_W, textBlockStyle } from "@/components/canvas-view";
+import {
+  BlockView,
+  CANVAS_W,
+  FONT_OPTIONS,
+  textBlockStyle,
+} from "@/components/canvas-view";
 
 const MIN_H = 560;
 const GRID = 4;
@@ -414,6 +419,18 @@ export function CanvasEditor({
         <div className="bg-card/70 flex flex-wrap items-center gap-1.5 rounded-lg border p-2">
           {(selected.type === "text" || selected.type === "heading") && (
             <>
+              <select
+                className="border-input bg-background h-8 rounded-md border px-1.5 text-sm"
+                value={(selected.data?.font as string) ?? "serif"}
+                onChange={(e) => patchData(selected.id, { font: e.target.value })}
+                title="Font"
+              >
+                {FONT_OPTIONS.map((f) => (
+                  <option key={f.value} value={f.value} style={{ fontFamily: f.stack }}>
+                    {f.label}
+                  </option>
+                ))}
+              </select>
               <input
                 type="number"
                 min={10}

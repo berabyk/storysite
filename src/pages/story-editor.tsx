@@ -15,10 +15,10 @@ import {
   updateStory,
   uploadImage,
 } from "@/lib/author";
-import { listCharacters } from "@/lib/characters";
+import { listCharacters, type CharacterListItem } from "@/lib/characters";
+import { CharacterPicker } from "@/components/character-picker";
 import { useAuth } from "@/lib/auth";
 import { useLocale } from "@/lib/hooks";
-import { cn } from "@/lib/utils";
 import type { StoryBlock, StoryDocument } from "@/lib/types";
 
 const uid = () =>
@@ -79,6 +79,8 @@ const T = {
     genrePh: "fantastik, polisiye, aşk…",
     tags: "Etiketler",
     tagsPh: "macera, gizem (virgülle ayır)",
+    coauthors: "Ortak yazarlar",
+    coauthorsPh: "kullanıcı adları (virgülle ayır)",
     saveDraft: "Taslağı kaydet",
     publish: "Yayınla",
   },
@@ -97,6 +99,8 @@ const T = {
     genrePh: "fantasy, mystery, romance…",
     tags: "Tags",
     tagsPh: "adventure, mystery (comma-separated)",
+    coauthors: "Co-authors",
+    coauthorsPh: "usernames (comma-separated)",
     saveDraft: "Save draft",
     publish: "Publish",
   },
@@ -117,17 +121,14 @@ export function StoryEditorPage() {
   const [genre, setGenre] = React.useState("");
   const [tags, setTags] = React.useState("");
   const [charRefs, setCharRefs] = React.useState<string[]>([]);
-  const [allChars, setAllChars] = React.useState<
-    { slug: string; name: string }[]
-  >([]);
+  const [coauthors, setCoauthors] = React.useState("");
+  const [allChars, setAllChars] = React.useState<CharacterListItem[]>([]);
   const [loading, setLoading] = React.useState(Boolean(slug));
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    listCharacters(locale).then((cs) =>
-      setAllChars(cs.map((c) => ({ slug: c.slug, name: c.name }))),
-    );
+    listCharacters(locale).then(setAllChars);
   }, [locale]);
 
   React.useEffect(() => {
@@ -140,6 +141,7 @@ export function StoryEditorPage() {
       setSummary(s.explanation);
       setCover(s.image);
       setCharRefs(s.characters ?? []);
+      setCoauthors((s.coauthors ?? []).map((a) => a.userName).join(", "));
       setGenre(s.genre ?? "");
       setTags((s.tags ?? []).join(", "));
       setDoc(ensureEditableDoc(s.content));
@@ -181,6 +183,10 @@ export function StoryEditorPage() {
         },
         language: locale,
         characterRefs: charRefs,
+        coauthors: coauthors
+          .split(",")
+          .map((s) => s.trim().replace(/^@/, ""))
+          .filter(Boolean),
         genre: genre.trim() || null,
         tags: tags
           .split(",")
@@ -272,43 +278,34 @@ export function StoryEditorPage() {
           </label>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <Label>{t.characters}</Label>
-          {allChars.length === 0 ? (
-            <p className="text-muted-foreground text-sm">{t.noCharacters}</p>
-          ) : (
-            <>
-              <p className="text-muted-foreground text-xs">
-                {t.charactersHint}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {allChars.map((c) => {
-                  const on = charRefs.includes(c.slug);
-                  return (
-                    <button
-                      key={c.slug}
-                      type="button"
-                      onClick={() =>
-                        setCharRefs((refs) =>
-                          on
-                            ? refs.filter((r) => r !== c.slug)
-                            : [...refs, c.slug],
-                        )
-                      }
-                      className={cn(
-                        "rounded-full border px-3 py-1 text-sm transition-colors",
-                        on
-                          ? "bg-primary text-primary-foreground border-transparent"
-                          : "hover:bg-accent",
-                      )}
-                    >
-                      {c.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div className="flex flex-col gap-2">
+            <Label>{t.characters}</Label>
+            {allChars.length === 0 ? (
+              <p className="text-muted-foreground text-sm">{t.noCharacters}</p>
+            ) : (
+              <>
+                <p className="text-muted-foreground text-xs">
+                  {t.charactersHint}
+                </p>
+                <CharacterPicker
+                  characters={allChars}
+                  value={charRefs}
+                  onChange={setCharRefs}
+                  locale={locale}
+                />
+              </>
+            )}
+          </div>
+
+          <label className="flex flex-col gap-1.5">
+            <Label>{t.coauthors}</Label>
+            <Input
+              value={coauthors}
+              placeholder={t.coauthorsPh}
+              onChange={(e) => setCoauthors(e.target.value)}
+            />
+          </label>
         </div>
 
         <div className="flex flex-col gap-2">

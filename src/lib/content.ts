@@ -51,6 +51,7 @@ interface StoryDetailDto extends StoryListItemDto {
   likedByMe: boolean;
   updatedAt: string;
   characterRefs?: string[];
+  coauthors?: AuthorDto[];
 }
 
 interface CharacterListItemDto {
@@ -135,6 +136,12 @@ export async function getStory(
     likeCount: s.likeCount,
     likedByMe: s.likedByMe,
     authorName: s.author?.displayName,
+    coauthors: (s.coauthors ?? []).map((a) => ({
+      id: a.id,
+      userName: a.userName,
+      displayName: a.displayName,
+      avatarUrl: a.avatarUrl ?? null,
+    })),
   };
 }
 
