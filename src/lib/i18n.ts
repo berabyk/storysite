@@ -23,6 +23,8 @@ type Dict = {
     latest: string;
     allStories: string;
     empty: string;
+    search: string;
+    noResults: string;
   };
   charactersPage: {
     title: string;
@@ -66,6 +68,8 @@ const dictionaries: Record<Locale, Dict> = {
       latest: "En yeni",
       allStories: "Tüm Hikâyeler",
       empty: "Henüz yayımlanmış bir hikâye yok.",
+      search: "Hikâye ara…",
+      noResults: "Aramanla eşleşen hikâye bulunamadı.",
     },
     charactersPage: {
       title: "Karakterler",
@@ -104,6 +108,8 @@ const dictionaries: Record<Locale, Dict> = {
       latest: "Latest",
       allStories: "All Stories",
       empty: "No published stories yet.",
+      search: "Search stories…",
+      noResults: "No stories match your search.",
     },
     charactersPage: {
       title: "Characters",
