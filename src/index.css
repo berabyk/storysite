@@ -129,6 +129,16 @@
   max-width: 68ch;
   margin-inline: auto;
   font-optical-sizing: auto;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.prose p,
+.prose li,
+.prose h1,
+.prose h2,
+.prose h3 {
+  overflow-wrap: break-word;
 }
 
 .prose > * + * {

@@ -47,7 +47,7 @@ function Block({ block }: { block: StoryBlock }) {
       return (
         <>
           {paras.map((p, i) => (
-            <p key={i} style={{ whiteSpace: "pre-wrap" }}>
+            <p key={i} className="break-words whitespace-pre-wrap">
               {p}
             </p>
           ))}
