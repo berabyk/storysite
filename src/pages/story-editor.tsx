@@ -15,8 +15,10 @@ import {
   updateStory,
   uploadImage,
 } from "@/lib/author";
+import { listCharacters } from "@/lib/characters";
 import { useAuth } from "@/lib/auth";
 import { useLocale } from "@/lib/hooks";
+import { cn } from "@/lib/utils";
 import type { StoryBlock, StoryDocument } from "@/lib/types";
 
 const uid = () =>
@@ -70,6 +72,9 @@ const T = {
     cover: "Kapak görseli",
     upload: "Görsel yükle",
     content: "İçerik",
+    characters: "Karakterler",
+    charactersHint: "Bu hikâyede yer alan karakterleri seç.",
+    noCharacters: "Henüz karakter yok — admin panelinden ekleyebilirsin.",
     saveDraft: "Taslağı kaydet",
     publish: "Yayınla",
   },
@@ -81,6 +86,9 @@ const T = {
     cover: "Cover image",
     upload: "Upload image",
     content: "Content",
+    characters: "Characters",
+    charactersHint: "Pick the characters that appear in this story.",
+    noCharacters: "No characters yet — add them from the admin panel.",
     saveDraft: "Save draft",
     publish: "Publish",
   },
@@ -98,9 +106,19 @@ export function StoryEditorPage() {
   const [summary, setSummary] = React.useState("");
   const [cover, setCover] = React.useState<string | null>(null);
   const [doc, setDoc] = React.useState<StoryDocument>(emptyDoc);
+  const [charRefs, setCharRefs] = React.useState<string[]>([]);
+  const [allChars, setAllChars] = React.useState<
+    { slug: string; name: string }[]
+  >([]);
   const [loading, setLoading] = React.useState(Boolean(slug));
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    listCharacters(locale).then((cs) =>
+      setAllChars(cs.map((c) => ({ slug: c.slug, name: c.name }))),
+    );
+  }, [locale]);
 
   React.useEffect(() => {
     if (!slug) return;
@@ -111,6 +129,7 @@ export function StoryEditorPage() {
       setTitle(s.title);
       setSummary(s.explanation);
       setCover(s.image);
+      setCharRefs(s.characters ?? []);
       setDoc(ensureEditableDoc(s.content));
       setLoading(false);
     });
@@ -149,6 +168,7 @@ export function StoryEditorPage() {
           mode: "flow" as const,
         },
         language: locale,
+        characterRefs: charRefs,
       };
       const res = storyId
         ? await updateStory(storyId, body)
@@ -215,6 +235,45 @@ export function StoryEditorPage() {
             onChange={(e) => setSummary(e.target.value)}
           />
         </label>
+
+        <div className="flex flex-col gap-2">
+          <Label>{t.characters}</Label>
+          {allChars.length === 0 ? (
+            <p className="text-muted-foreground text-sm">{t.noCharacters}</p>
+          ) : (
+            <>
+              <p className="text-muted-foreground text-xs">
+                {t.charactersHint}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {allChars.map((c) => {
+                  const on = charRefs.includes(c.slug);
+                  return (
+                    <button
+                      key={c.slug}
+                      type="button"
+                      onClick={() =>
+                        setCharRefs((refs) =>
+                          on
+                            ? refs.filter((r) => r !== c.slug)
+                            : [...refs, c.slug],
+                        )
+                      }
+                      className={cn(
+                        "rounded-full border px-3 py-1 text-sm transition-colors",
+                        on
+                          ? "bg-primary text-primary-foreground border-transparent"
+                          : "hover:bg-accent",
+                      )}
+                    >
+                      {c.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
 
         <div className="flex flex-col gap-2">
           <Label>{t.content}</Label>

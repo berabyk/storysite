@@ -23,6 +23,7 @@ export interface StoryInput {
   coverImageUrl?: string | null;
   content: StoryDocument;
   language: string;
+  characterRefs?: string[];
 }
 
 export function getMyStories() {

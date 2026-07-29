@@ -47,6 +47,7 @@ interface StoryDetailDto extends StoryListItemDto {
   content: StoryDocument;
   likedByMe: boolean;
   updatedAt: string;
+  characterRefs?: string[];
 }
 
 interface CharacterListItemDto {
@@ -97,6 +98,7 @@ export async function getStory(
   if (!s) return null;
   return {
     ...toStorySummary(s),
+    characters: s.characterRefs ?? [],
     content: s.content ?? EMPTY_DOC,
     viewCount: s.viewCount,
     likeCount: s.likeCount,
