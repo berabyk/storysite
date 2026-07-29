@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Navigate } from "react-router-dom";
-import { Loader2, Pencil, Plus, Trash2, Upload, X } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { getCharacter } from "@/lib/content";
-import { uploadImage } from "@/lib/author";
+import { ImagePicker } from "@/components/image-picker";
 import { listUniverses, type UniverseListItem } from "@/lib/universes";
 import {
   createCharacter,
@@ -128,7 +128,6 @@ export function AdminCharactersPage() {
   const [universes, setUniverses] = React.useState<UniverseListItem[]>([]);
   const [form, setForm] = React.useState<FormState | null>(null);
   const [busy, setBusy] = React.useState(false);
-  const [uploading, setUploading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   const reload = React.useCallback(() => {
@@ -166,17 +165,6 @@ export function AdminCharactersPage() {
       appearance: sheet.appearance ?? "",
       background: sheet.background ?? "",
     });
-  }
-
-  async function onUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      set({ imageUrl: await uploadImage(file) });
-    } finally {
-      setUploading(false);
-    }
   }
 
   async function save() {
@@ -261,26 +249,12 @@ export function AdminCharactersPage() {
           </div>
 
           <Field label={t.image}>
-            <div className="flex items-center gap-3">
-              {form.imageUrl && (
-                <img
-                  src={form.imageUrl}
-                  alt=""
-                  className="size-14 rounded-md object-cover"
-                />
-              )}
-              <Button asChild variant="outline" size="sm">
-                <label className="cursor-pointer">
-                  {uploading ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <Upload />
-                  )}
-                  {t.upload}
-                  <input type="file" accept="image/*" className="hidden" onChange={onUpload} />
-                </label>
-              </Button>
-            </div>
+            <ImagePicker
+              value={form.imageUrl}
+              onChange={(url) => set({ imageUrl: url })}
+              locale={locale}
+              previewClassName="size-14"
+            />
           </Field>
 
           <Field label={t.explanation}>

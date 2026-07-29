@@ -3,6 +3,7 @@ import {
   Bookmark,
   Flag,
   Globe,
+  Image as ImageIcon,
   Library,
   LogIn,
   LogOut,
@@ -147,6 +148,12 @@ export function SiteHeader() {
                   <Link to={`/${locale}/saved`}>
                     <Bookmark className="size-4" />
                     {locale === "tr" ? "Kaydedilenler" : "Saved"}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to={`/${locale}/media`}>
+                    <ImageIcon className="size-4" />
+                    {locale === "tr" ? "Görsellerim" : "My images"}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
